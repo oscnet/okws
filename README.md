@@ -138,17 +138,26 @@ logger.info(ret)
     
     清除 redis 上的缓存数据
 
-7. 如果要在 websocket 发送数据时获得通知，可以使用 redis 订阅
+## redis
+
+
+1. 如果要在 websocket 发送数据时获得通知，可以使用 redis 订阅
 
     * redis 的 key 为 "okex/name/频道名"
     * 如果 websocket 返回的是 event, redis 的 key 为 "okex/name/event"
- 
+
+2. k 线数据除了用类似 await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT"}) 取得外，也可以订阅 'okex/name/spot/candle60s' 频道，可以在有新 k 线时得到通知。通知内容为最新 k 线的 timestamp，表示这个 timestamp 之前的 k 线已经确定，可以使用。
+
  
 ## 测试
 
 export oktest='{"apiKey": "", "secret": "", "password": ""}'
 
 运行 `pytest`
+
+## 更改记录
+
+2020.11.26 可以在有新 k 线时得到通知。
 
 <!--
 ;## install for dev

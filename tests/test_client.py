@@ -1,5 +1,7 @@
 import asyncio
 import pytest
+import json
+import aioredis
 import logging
 from okws.client import create_client
 from okws.server import run
@@ -58,6 +60,52 @@ async def ticker(okex):
     logger.info(ret)
     assert ts != ret['timestamp']
 
+async def instruments(okex):
+    await asyncio.sleep(1)
+    ret = await okex.subscribe('tests', "futures/instruments")
+    assert ret['errorCode'] == 80000
+    await asyncio.sleep(1)
+
+    ret = await okex.get('tests', "futures/instruments")
+    # logger.info(ret)
+    assert len(ret) > 10
+
+
+async def redis_listen(channel):
+    redis = await aioredis.create_redis_pool("redis://localhost")
+    ch, = await redis.subscribe(channel)
+    try:
+        async for message in ch.iter(encoding='utf-8'):
+            logger.info(message)
+            ret = json.loads(message)
+            assert 'new candle' in ret
+    finally:
+        ch.close()
+        redis.close()
+        await redis.wait_closed()
+
+
+async def candle(okex):
+    task = asyncio.create_task(redis_listen('okex/tests/spot/candle60s/ETH-USDT'))
+    
+    ret = await okex.subscribe('tests', "spot/candle60s:ETH-USDT")
+    assert ret['errorCode'] == 80000
+
+    await asyncio.sleep(62)
+    ret = await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT"})
+    logger.info(ret)
+    assert len(ret)>=2
+    for k in ['timestamp','open','high','low','close','volume']:
+        assert k in ret[0]
+    # close listen
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        logger.info('redis listion cancelled!')
+
+    await asyncio.sleep(1)
+
 
 async def client():
     api = ccxt.okex(get_okex_params())
@@ -78,24 +126,18 @@ async def client():
     assert ret['errorCode'] == 80000
     assert ret['message'] == ['tests']
 
+    # 开始测试 --------------------------------------------------------------------------------------------
+
     await ticker(okex)
 
-    # -------------------------测试 futures/position -----------------------------------------------------
-    # await position(okex, api)
+    await position(okex, api)
 
-    # --------------------------------全量合约信息频道-------------------------------------------------------
-    # futures/instruments
+    await instruments(okex)
 
-    await asyncio.sleep(1)
-    ret = await okex.subscribe('tests', "futures/instruments")
-    assert ret['errorCode'] == 80000
-    await asyncio.sleep(1)
-
-    ret = await okex.get('tests', "futures/instruments")
-    # logger.info(ret)
-    assert len(ret) > 10
-
-    # -----------------------------------------------------------------------------------------------------
+    await candle(okex)
+   
+    # 结束测试 ---------------------------------------------------------------------------------------------
+   
     ret = await okex.close_ws('tests')
     logger.info(ret)
 
@@ -115,10 +157,11 @@ async def client():
     await api.close()
 
 
+
 async def test_server():
     await asyncio.gather(
         run(),
-        client()
+        client(),
     )
 
 

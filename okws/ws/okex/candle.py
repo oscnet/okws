@@ -1,6 +1,7 @@
 # 处理 k 线数据的保存和取出
 import logging
 from datetime import datetime
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,10 @@ async def write(ctx):
             dt = datetime.strptime(
                 candle['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ')
             # await ctx['redis'].delete(key)
+            ret = await ctx['redis'].zrank(key,candle['timestamp'])
+            if ret is None:
+                await ctx['redis'].publish(key,json.dumps({'new candle':candle['timestamp']}))
+
             await ctx['redis'].zadd(key, dt.timestamp(), candle['timestamp'])
             l = await ctx['redis'].zcard(key)
             if l > MAXLENGTH:
@@ -36,6 +41,8 @@ async def read(ctx):
         channel: okex 频道名, 如 'swap/candle60s'
         {'instrument_id': 'BTC-USD-SWAP','n':100} n 可选参数，取最新的 n 条 k 线数据
     返回：最新的 n 条 k 线数据列表。
+    subscribe 'okex/name/swap/candle60s' 可以在有新 k 线时得到通知，通知内容为最新 k 线的 timestamp,表示这个 timestamp 之前的 k 线已经确定，可以使用。
+
     ```
         [
             {
