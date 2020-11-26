@@ -146,7 +146,7 @@ logger.info(ret)
     * redis 的 key 为 "okex/name/频道名"
     * 如果 websocket 返回的是 event, redis 的 key 为 "okex/name/event"
 
-2. k 线数据除了用类似 await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT"}) 取得外，也可以订阅 'okex/name/spot/candle60s' 频道，可以在有新 k 线时得到通知。通知内容为最新 k 线的 timestamp，表示这个 timestamp 之前的 k 线已经确定，可以使用。
+2. K 线数据除了用类似 `await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT"})` 取得外，也可以订阅 `'okex/name/spot/candle60s'` 频道，可以在有新 K 线时得到通知。通知内容为最新 K 线的 `timestamp`，表示这个 `timestamp` 之前的 K 线已经确定，可以使用。
 
  
 ## 测试
