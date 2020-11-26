@@ -1,13 +1,16 @@
 # 给最终用户的接口， 从 redis 取 okex websockets 的数据
+import asyncio
 import json
 import logging
+from typing import Union
+
 import aioredis
-import asyncio
-from okws.ws.okex.normal import config as normal
-from okws.ws.okex.candle import config as candle
 from interceptor.interceptor import Interceptor, execute
-from .server import LISTEN_CHANNEL
-from .server import REDIS_INFO_KEY
+
+from okws.ws.okex.candle import config as candle
+from okws.ws.okex.normal import config as normal
+
+from .server import LISTEN_CHANNEL, REDIS_INFO_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +60,11 @@ class _Client:
         ret = await self.redis.get(REDIS_INFO_KEY, encoding='utf-8')
         return json.loads(ret)
 
-    async def subscribe(self, name, path):
+    async def subscribe(self, name, channels: Union[list, str]):
         await self.send({
             'op': 'subscribe',
             'name': name,
-            'args': [path]
+            'args': channels if type(channels) == list else [channels]
         })
         await asyncio.sleep(0)
         ret = await self.redis.get(REDIS_INFO_KEY, encoding='utf-8')
