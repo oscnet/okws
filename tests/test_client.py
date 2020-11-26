@@ -1,11 +1,13 @@
 import asyncio
-import pytest
 import json
-import aioredis
 import logging
+
+import aioredis
+import ccxt.async_support as ccxt
+import pytest
 from okws.client import create_client
 from okws.server import run
-import ccxt.async_support as ccxt
+
 from tests.test_okex_app import get_okex_params
 
 pytestmark = pytest.mark.asyncio
@@ -60,6 +62,7 @@ async def ticker(okex):
     logger.info(ret)
     assert ts != ret['timestamp']
 
+
 async def instruments(okex):
     await asyncio.sleep(1)
     ret = await okex.subscribe('tests', "futures/instruments")
@@ -86,16 +89,17 @@ async def redis_listen(channel):
 
 
 async def candle(okex):
-    task = asyncio.create_task(redis_listen('okex/tests/spot/candle60s/ETH-USDT'))
-    
+    task = asyncio.create_task(redis_listen(
+        'okex/tests/spot/candle60s/ETH-USDT'))
+
     ret = await okex.subscribe('tests', "spot/candle60s:ETH-USDT")
     assert ret['errorCode'] == 80000
 
     await asyncio.sleep(62)
     ret = await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT"})
     logger.info(ret)
-    assert len(ret)>=2
-    for k in ['timestamp','open','high','low','close','volume']:
+    assert len(ret) >= 2
+    for k in ['timestamp', 'open', 'high', 'low', 'close', 'volume']:
         assert k in ret[0]
     # close listen
     task.cancel()
@@ -135,9 +139,9 @@ async def client():
     await instruments(okex)
 
     await candle(okex)
-   
+
     # 结束测试 ---------------------------------------------------------------------------------------------
-   
+
     ret = await okex.close_ws('tests')
     logger.info(ret)
 
@@ -155,7 +159,6 @@ async def client():
     await asyncio.sleep(1)
 
     await api.close()
-
 
 
 async def test_server():
