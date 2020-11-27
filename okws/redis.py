@@ -56,7 +56,7 @@ class Client():
             ret = await self.run_app("ON_DATA", _data_=message)
             if ret == -1:
                 return
- 
+
     async def run(self):
         try:
             logger.info("READY")
@@ -83,3 +83,6 @@ class Client():
         if self.task is not None:
             self.task.cancel()
             self.task = None
+
+    def __del__(self):
+        self.close()
