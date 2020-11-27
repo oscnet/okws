@@ -150,5 +150,7 @@ async def run():
 
 if __name__ == '__main__':
     from .config import main
-
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logging.info('Ctrl+C 完成退出')
