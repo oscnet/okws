@@ -6,7 +6,7 @@ import logging
 import zlib
 from collections.abc import Mapping
 
-from interceptor.interceptor import add_response, Interceptor
+from okws.interceptor import add_response, Interceptor
 
 """用法:
     okex(), okex(cfg)    

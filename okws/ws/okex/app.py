@@ -3,7 +3,7 @@
 import json
 import logging
 import aioredis
-from interceptor.interceptor import Interceptor, execute
+from okws.interceptor import Interceptor, execute
 from okws.ws.okex.decode import decode
 from .candle import config as candle
 from .normal import config as normal

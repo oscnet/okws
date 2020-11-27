@@ -5,7 +5,7 @@ import logging
 from typing import Union
 
 import aioredis
-from interceptor.interceptor import Interceptor, execute
+from okws.interceptor import execute
 
 from okws.ws.okex.candle import config as candle
 from okws.ws.okex.normal import config as normal
