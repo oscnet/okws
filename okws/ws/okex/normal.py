@@ -54,13 +54,13 @@ async def write(ctx):
         elif table == 'spot/account':
             # currency 唯一
             for data in ctx['data']['data']:
-                key = f"okex/{ctx['name']}/{table}/{data['currency']}"
+                key = f"okex/{ctx['name']}/{table}:{data['currency']}"
                 await ctx['redis'].hmset_dict(key, data)
             ctx['response'] = True
         elif table == 'futures/account':
             for data in ctx['data']['data']:
                 for k, v in data.items():
-                    key = f"okex/{ctx['name']}/{table}/{k}"
+                    key = f"okex/{ctx['name']}/{table}:{k}"
                     await ctx['redis'].hmset_dict(key, v)
             ctx['response'] = True
         elif table == 'futures/instruments':
@@ -69,14 +69,14 @@ async def write(ctx):
             await redis_clear(ctx['redis'], key+'*')
             for data in ctx['data']['data'][0]:
                 await ctx['redis'].sadd(key, data['instrument_id'])
-                await ctx['redis'].hmset_dict(f"{key}/{data['instrument_id']}", data)
+                await ctx['redis'].hmset_dict(f"{key}:{data['instrument_id']}", data)
             ctx['response'] = True
         else:
 
             for data in ctx['data']['data']:
                 # 对所有一个 instrument_id 只有一条数据的有效，如果是有多条数据，需要在前面处理
                 if 'instrument_id' in data:
-                    key = f"okex/{ctx['name']}/{table}/{data['instrument_id']}"
+                    key = f"okex/{ctx['name']}/{table}:{data['instrument_id']}"
                     await ctx['redis'].hmset_dict(key, data)
                     ctx['response'] = True
                 else:
@@ -96,13 +96,13 @@ async def read(ctx):
             ids = await ctx['redis'].zrange(key, index, encoding='utf-8')
             datas = []
             for uid in ids:
-                data = await ctx['redis'].hgetall(f"{key}/{uid}", encoding='utf-8')
+                data = await ctx['redis'].hgetall(f"{key}:{uid}", encoding='utf-8')
                 datas.append(data)
             # logger.info(candles)
             ctx['response'] = datas
         elif ctx['path'] == 'spot/account':
             if 'currency' in ctx:
-                key = f"okex/{ctx['name']}/{ctx['path']}/{ctx['currency']}"
+                key = f"okex/{ctx['name']}/{ctx['path']}:{ctx['currency']}"
                 ctx['response'] = await ctx['redis'].hgetall(key, encoding='utf-8')
             else:
                 raise ValueError(f"需要参数 currency！ ")
@@ -112,14 +112,14 @@ async def read(ctx):
             ids = await ctx['redis'].smembers(key, encoding='utf-8')
             datas = []
             for uid in ids:
-                data = await ctx['redis'].hgetall(f"{key}/{uid}", encoding='utf-8')
+                data = await ctx['redis'].hgetall(f"{key}:{uid}", encoding='utf-8')
                 datas.append(data)
             # logger.info(candles)
             ctx['response'] = datas
 
         else:
             if 'instrument_id' in ctx:
-                key = f"okex/{ctx['name']}/{ctx['path']}/{ctx['instrument_id']}"
+                key = f"okex/{ctx['name']}/{ctx['path']}:{ctx['instrument_id']}"
                 ctx['response'] = await ctx['redis'].hgetall(key, encoding='utf-8')
             else:
                 raise ValueError(f"需要参数 instrument_id！ ")

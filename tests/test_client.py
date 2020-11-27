@@ -90,7 +90,7 @@ async def redis_listen(channel):
 
 async def candle(okex):
     task = asyncio.create_task(redis_listen(
-        'okex/tests/spot/candle60s/ETH-USDT'))
+        'okex/tests/spot/candle60s:ETH-USDT'))
 
     ret = await okex.subscribe('tests', "spot/candle60s:ETH-USDT")
     assert ret['errorCode'] == 80000

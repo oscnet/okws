@@ -17,7 +17,7 @@ async def write(ctx):
             # logger.info(d)
             candle = dict(zip(["timestamp", "open", "high", "low",
                                "close", "volume", "currency_volume"], d['candle']))
-            key = f"okex/{ctx['name']}/{table}/{d['instrument_id']}"
+            key = f"okex/{ctx['name']}/{table}:{d['instrument_id']}"
             dt = datetime.strptime(
                 candle['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ')
             # await ctx['redis'].delete(key)
@@ -62,7 +62,7 @@ async def read(ctx):
     if ('response' not in ctx) and ctx['path'].find("candle") > 0:
         if 'instrument_id' not in ctx:
             raise Exception(" params 参数中没有 instrument_id")
-        real_path = f"okex/{ctx['name']}/{ctx['path']}/{ctx['instrument_id']}"
+        real_path = f"okex/{ctx['name']}/{ctx['path']}:{ctx['instrument_id']}"
         index = 0
         if 'n' in ctx:
             l = await ctx['redis'].zcard(real_path)
