@@ -29,10 +29,10 @@ class App(Interceptor):
             self.redis = await aioredis.create_redis_pool(self.redis_url)
         elif request['_signal_'] == 'CONNECTED':
             await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'CONNECTED'}))
-            logger.debug(f"{self.name} 已连接")
+            logger.info(f"{self.name} 已连接")
         elif request['_signal_'] == 'DISCONNECTED':
             await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'DISCONNECTED'}))
-            logger.debug(f"{self.name} 已连接")
+            logger.info(f"{self.name} DISCONNECTED")
         elif request['_signal_'] == 'EXIT':
             await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'EXIT'}))
             logger.info(f"{self.name} 退出")

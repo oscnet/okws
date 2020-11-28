@@ -30,12 +30,11 @@ password=
 2. 内嵌到自己的程序中：
 
 ```python
-from okws.server import run
-from okws.client import create_client
+import okws
 import asyncio
 
 async def client():
-    okex = await create_client()
+    okex = await okws.create_control()
     
     # 连接到 websocket 服务器
     await okex.open_ws('tests', {'apiKey':'','secret':'','password':''})
@@ -55,10 +54,9 @@ async def client():
    
 async def test_server():
     await asyncio.gather(
-        run(),
+        okws.server.run(),
         client()
     )
-
 
 if __name__ == '__main__':
     asyncio.run(test_server())
@@ -93,11 +91,11 @@ if __name__ == '__main__':
 ```python
 import asyncio
 import logging
-from okws.client import create_client
+import okws
 
 logger = logging.getLogger(__name__)
 
-okex = await create_client()
+okex = await okws.create_control()
 ret = await okex.open_ws('tests',{'apiKey':'','secret':'','password':''})  # 连接到 okex websockets
 logger.info(ret)
 
@@ -112,7 +110,7 @@ logger.info(ret)
 ## 客户端 `api`
 
 提供了一个简单的客户端用以返问 `redis` 的数据，用户也可以自己直接从 `redis` 中获取。
- `create_client` 返回的类有以下几个函数：
+ `create_control` 返回的类有以下几个函数：
 
 1. `open_ws(name, auth_params={})`
 

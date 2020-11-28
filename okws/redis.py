@@ -1,18 +1,14 @@
 import asyncio
-import json
 import logging
-import socket
-from asyncio.exceptions import CancelledError
 from typing import Union
+from .settings import REDIS_URL
 
 import aioredis
-import websockets
-from websockets.exceptions import ConnectionClosed
 
 logger = logging.getLogger(__name__)
 
 
-class Client():
+class Redis():
     """连接到 redis ,并且取得 channel 数据
     当接收到 redis 数据时，会调用 app(request)，并且对于 app(request) 的返回数据，会原样发送到 redis 服务器?
     request:
@@ -35,7 +31,7 @@ class Client():
 
     """
 
-    def __init__(self, channels: Union[list, str], app, url="redis://localhost"):
+    def __init__(self, channels: Union[list, str], app, url=REDIS_URL):
         """初始化
 
         Args:
@@ -45,7 +41,6 @@ class Client():
         """
         self.url = url
         self.channels = channels if type(channels) == list else [channels]
-        logger.info(self.channels)
         self.app = app
         self.tasks = []
 
@@ -66,7 +61,7 @@ class Client():
             await self.run_app("READY")
             redis = await aioredis.create_redis_pool(self.url)
             channels = await redis.subscribe(*self.channels)
-            logger.info(f"已连接 {channels}")
+            # logger.info(f"已连接 {channels}")
             await self.run_app("CONNECTED")
             for ch in channels:
                 task = asyncio.create_task(self.reader(ch))

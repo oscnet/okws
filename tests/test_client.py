@@ -5,8 +5,8 @@ import logging
 import aioredis
 import ccxt.async_support as ccxt
 import pytest
-from okws.client import create_client
-from okws.server import run
+import okws
+import okws.server as server
 
 from tests.test_okex_app import get_okex_params
 
@@ -115,7 +115,7 @@ async def client():
     api = ccxt.okex(get_okex_params())
 
     await asyncio.sleep(2)
-    okex = await create_client()
+    okex = await okws.create_control()
     await okex.redis_clear()
 
     ret = await okex.open_ws('tests', get_okex_params())
@@ -163,7 +163,7 @@ async def client():
 
 async def test_server():
     await asyncio.gather(
-        run(),
+        server.run(),
         client(),
     )
 

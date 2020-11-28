@@ -15,16 +15,14 @@
     {"op": "close", "name":"myname"}
 
 """
-from .redis import Client
 import asyncio
 import json
 import logging
 import aioredis
-from okws.ws.okex.app import App
-from okws.ws.okex.client import Client as okex
-
-LISTEN_CHANNEL = 'trade-ws'
-REDIS_INFO_KEY = 'trade-ws/info'
+import sys
+import okws
+from .config import start_websockets, parse_argv
+from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +37,7 @@ async def redis_msg(redis, event, msg, errorcode):
 
 class RedisCommand:
     # 处理通过 redis 发过来的用户命令
-    URL = 'redis://localhost'
+    URL = REDIS_URL
 
     def __init__(self):
         self.ws_clients = {}
@@ -77,7 +75,7 @@ class RedisCommand:
             return
         if 'name' in cmd:
             args = cmd.get('args', {})
-            client = okex(App(cmd['name'], args))
+            client = okws.Websockets(okws.App(cmd['name'], args))
             self.ws_clients[cmd['name']] = client
             task = asyncio.create_task(client.run())
             self.tasks[cmd['name']] = task
@@ -144,13 +142,22 @@ class RedisCommand:
 
 
 async def run():
-    redis = Client(LISTEN_CHANNEL, RedisCommand())
+    redis = okws.Redis(LISTEN_CHANNEL, RedisCommand())
     await redis.run()
 
 
+async def main(conf):
+    await asyncio.gather(
+        run(),
+        start_websockets(conf)
+    )
+
+
 if __name__ == '__main__':
-    from .config import main
     try:
-        main()
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s - %(filename)s[%(lineno)d] - %(levelname)s: %(message)s')
+        config = parse_argv(sys.argv)
+        asyncio.run(main(config))
     except KeyboardInterrupt:
         logging.info('Ctrl+C 完成退出')

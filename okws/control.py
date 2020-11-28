@@ -10,7 +10,7 @@ from okws.interceptor import execute
 from okws.ws.okex.candle import config as candle
 from okws.ws.okex.normal import config as normal
 
-from .server import LISTEN_CHANNEL, REDIS_INFO_KEY
+from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class _Client:
             await self.redis.wait_closed()
             self.redis = None
 
-    def __init__(self, redis_url="redis://localhost"):
+    def __init__(self, redis_url=REDIS_URL):
         # 注意初始化要执行 init()
         self.redis_url = redis_url
         self.redis = None
@@ -107,7 +107,7 @@ class _Client:
             self.redis.close()
 
 
-async def create_client(redis_url='redis://localhost') -> _Client:
+async def create_control(redis_url=REDIS_URL) -> _Client:
     # 使用些函数初始化 OKEX 类
     okex = _Client(redis_url)
     await okex.init()

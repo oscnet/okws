@@ -4,12 +4,12 @@ import socket
 from asyncio.exceptions import CancelledError, TimeoutError
 import websockets
 from websockets.exceptions import ConnectionClosed
-from tenacity import retry,stop_after_attempt,wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
 
-class Client:
+class Websockets:
     """连接到 OKEX ws 服务器
     当接收到服务器数据时，会调用 app(request)，并且对于 app(request) 的返回数据，会原样发送到 ws 服务器，也可以在 app 中使用 request['_server_'].send 向 ws 服务器发送数据
     request:
@@ -82,15 +82,14 @@ class Client:
                         logger.debug(f"websocket {ret}")
 
         except (ConnectionClosed, socket.error):
-            await self.run_app("DISCONNECTED")
             logger.exception("连接断开")
-            self.ws = None
             raise
         except CancelledError:
             logger.info("任务取消")
-            await self.run_app("DISCONNECTED")
-            self.ws = None
             raise
+        finally:
+            self.ws = None
+            await self.run_app("DISCONNECTED")
 
     async def run(self):
         try:
@@ -116,6 +115,6 @@ class Client:
     def close(self):
         if self.task is not None:
             self.task.cancel()
-    
+
     def __del__(self):
         self.close()

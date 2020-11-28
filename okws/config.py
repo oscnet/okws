@@ -1,12 +1,11 @@
 import os
 import configparser
-import sys, getopt
+import getopt
 import logging
 import os.path
-from .client import create_client
-from .server import run as server_run
 import asyncio
 import json
+import okws
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ async def start_websockets(config):
     if config is None:
         # 没有配置文件
         return
-    okex = await create_client()
+    okex = await okws.create_control()
     await asyncio.sleep(2)
     for section in config.sections():
         if section != 'config':
@@ -70,17 +69,3 @@ async def start_websockets(config):
 
     ret = await okex.servers()
     logger.info(f"{ret['message']} 已启动")
-
-
-async def run(config):
-    await asyncio.gather(
-        server_run(),
-        start_websockets(config)
-    )
-
-
-def main():
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(filename)s[%(lineno)d] - %(levelname)s: %(message)s')
-    config = parse_argv(sys.argv)
-    asyncio.run(run(config))

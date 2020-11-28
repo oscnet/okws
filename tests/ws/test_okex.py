@@ -1,6 +1,6 @@
 import asyncio
 import pytest
-from okws.ws.okex.client import Client
+from okws.ws.okex.ws import Websockets
 import logging
 
 # pytest -o log_cli=true --log-cli-level=info  -s
@@ -16,7 +16,7 @@ async def app(request):
 
 async def test_client():
     logger.info("start test")
-    client = Client(app)
+    client = Websockets(app)
 
     async def stop():
         await asyncio.sleep(0.5)

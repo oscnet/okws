@@ -7,7 +7,7 @@
 """
 
 from collections.abc import Mapping
-from abc import ABC, abstractmethod
+from abc import ABC
 import logging
 import pprint
 

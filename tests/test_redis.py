@@ -1,4 +1,4 @@
-from okws.redis import Client
+import okws
 import pytest
 import asyncio
 import logging
@@ -36,7 +36,7 @@ async def on_cmd(request):
 
 async def test_cmd():
     try:
-        client = Client(CHANNEL, on_cmd)
+        client = okws.Redis(CHANNEL, on_cmd)
         await asyncio.gather(
             client.run(),
             send_exit_cmd(client))
