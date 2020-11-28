@@ -1,11 +1,13 @@
-from websockets.exceptions import ConnectionClosed
-import websockets
-from asyncio.exceptions import CancelledError
-import socket
 import asyncio
-import aioredis
-import logging
 import json
+import logging
+import socket
+from asyncio.exceptions import CancelledError
+from typing import Union
+
+import aioredis
+import websockets
+from websockets.exceptions import ConnectionClosed
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,7 @@ class Client():
 
     """
 
-    def __init__(self, channel, app, url="redis://localhost"):
+    def __init__(self, channels: Union[list, str], app, url="redis://localhost"):
         """初始化
 
         Args:
@@ -42,9 +44,10 @@ class Client():
             url (str, optional): [description]. Defaults to "redis://localhost".
         """
         self.url = url
-        self.channel = channel
+        self.channels = channels if type(channels) == list else [channels]
+        logger.info(self.channels)
         self.app = app
-        self.task = None
+        self.tasks = []
 
     async def run_app(self, signal, **request):
         request["_signal_"] = signal
@@ -62,17 +65,22 @@ class Client():
             logger.info("READY")
             await self.run_app("READY")
             redis = await aioredis.create_redis_pool(self.url)
-            ch, = await redis.subscribe(self.channel)
-            logger.info("已连接")
+            channels = await redis.subscribe(*self.channels)
+            logger.info(f"已连接 {channels}")
             await self.run_app("CONNECTED")
-            self.task = asyncio.create_task(self.reader(ch))
-            await self.task
+            for ch in channels:
+                task = asyncio.create_task(self.reader(ch))
+                self.tasks.append(task)
+            await asyncio.wait(self.tasks)
+            # await self.task
+
         except asyncio.CancelledError:
             logger.info("任务取消")
         finally:
             await self.run_app("DISCONNECTED")
             logger.info("redis client stopped.")
-            ch.close()
+            for ch in channels:
+                ch.close()
             if redis is not None:
                 redis.close()
                 await redis.wait_closed()
@@ -80,9 +88,8 @@ class Client():
             await self.run_app("EXIT")
 
     def close(self):
-        if self.task is not None:
-            self.task.cancel()
-            self.task = None
+        for task in self.tasks:
+            task.cancel()
 
     def __del__(self):
         self.close()
