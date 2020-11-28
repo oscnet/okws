@@ -21,9 +21,16 @@ async def write(ctx):
             dt = datetime.strptime(
                 candle['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ')
             # await ctx['redis'].delete(key)
-            ret = await ctx['redis'].zrank(key,candle['timestamp'])
+            ret = await ctx['redis'].zrank(key, candle['timestamp'])
+            # logger.info(f"{candle['timestamp']}: {ret}")
             if ret is None:
-                await ctx['redis'].publish(key,json.dumps({'new candle':candle['timestamp']}))
+                # 开始新的  timestamp 数据，表示上个 `timestamp` 的 K 线已经确定，可以使用。
+                l = await ctx['redis'].zcard(key)
+                if l > 0:
+                    ts = await ctx['redis'].zrange(key, l-1, l-1, encoding='utf-8')
+                    last_candle = await ctx['redis'].hgetall(f"{key}/{ts[0]}", encoding='utf-8')
+                    # logger.info(f"last candle={last_candle}")
+                    await ctx['redis'].publish(key, json.dumps({'candle': last_candle, 'timestamp': ts[0]}))
 
             await ctx['redis'].zadd(key, dt.timestamp(), candle['timestamp'])
             l = await ctx['redis'].zcard(key)

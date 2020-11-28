@@ -81,7 +81,7 @@ async def redis_listen(channel):
         async for message in ch.iter(encoding='utf-8'):
             logger.info(message)
             ret = json.loads(message)
-            assert 'new candle' in ret
+            assert 'candle' in ret
     finally:
         ch.close()
         redis.close()
@@ -95,7 +95,7 @@ async def candle(okex):
     ret = await okex.subscribe('tests', "spot/candle60s:ETH-USDT")
     assert ret['errorCode'] == 80000
 
-    await asyncio.sleep(62)
+    await asyncio.sleep(125)
     ret = await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT"})
     logger.info(ret)
     assert len(ret) >= 2

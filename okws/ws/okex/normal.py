@@ -5,6 +5,7 @@
 
 
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +57,14 @@ async def write(ctx):
             for data in ctx['data']['data']:
                 key = f"okex/{ctx['name']}/{table}:{data['currency']}"
                 await ctx['redis'].hmset_dict(key, data)
+                await ctx['redis'].publish(key, json.dumps(data))
             ctx['response'] = True
         elif table == 'futures/account':
             for data in ctx['data']['data']:
                 for k, v in data.items():
                     key = f"okex/{ctx['name']}/{table}:{k}"
                     await ctx['redis'].hmset_dict(key, v)
+                    await ctx['redis'].publish(key, json.dumps(v))
             ctx['response'] = True
         elif table == 'futures/instruments':
             key = f"okex/{ctx['name']}/{table}"
@@ -78,6 +81,7 @@ async def write(ctx):
                 if 'instrument_id' in data:
                     key = f"okex/{ctx['name']}/{table}:{data['instrument_id']}"
                     await ctx['redis'].hmset_dict(key, data)
+                    await ctx['redis'].publish(key, json.dumps(data))
                     ctx['response'] = True
                 else:
                     logger.error(f"不知道如何处理：{table}\r\n{data}")
