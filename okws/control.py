@@ -50,11 +50,11 @@ class _Client:
         # send cmd to websocket
         # if 'name' not in cmd:
         #     logger.warning(f"未指定 websocket 服务名! {cmd}")
+        cmd['id'] = self.id
         await self.redis.publish_json(LISTEN_CHANNEL, cmd)
 
     async def open_ws(self, name, auth_params={}):
         await self.send({
-            'id': self.id,
             'op': 'open',
             'name': name,
             'args': auth_params
@@ -66,7 +66,6 @@ class _Client:
 
     async def subscribe(self, name, channels: Union[list, str]):
         await self.send({
-            'id': self.id,
             'op': 'subscribe',
             'name': name,
             'args': channels if type(channels) == list else [channels]
@@ -77,7 +76,6 @@ class _Client:
 
     async def close_ws(self, name):
         await self.send({
-            'id': self.id,
             'op': 'close',
             'name': name
         })
@@ -87,7 +85,6 @@ class _Client:
 
     async def server_quit(self):
         await self.send({
-            'id': self.id,
             'op': 'quit_server'
         })
         await asyncio.sleep(1)
@@ -96,7 +93,6 @@ class _Client:
 
     async def servers(self):
         await self.send({
-            'id': self.id,
             'op': 'servers'
         })
         await asyncio.sleep(1)
