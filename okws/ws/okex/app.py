@@ -40,7 +40,7 @@ class App(Interceptor):
         elif request['_signal_'] == 'ON_DATA':
             logger.debug(request['DATA'])
             if "table" in request['DATA']:
-                await self.redis.publish(f"okex/{self.name}/{request['DATA']['table']}", request['_data_'])
+                await self.redis.publish(f"okex/{self.name}/{request['DATA']['table']}", json.dumps(request['DATA']))
                 # save to redis
                 await execute({"data": request['DATA'], "redis": self.redis, "name": self.name},
                               [normal['write'], candle['write']])

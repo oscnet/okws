@@ -8,7 +8,7 @@ import aioredis
 logger = logging.getLogger(__name__)
 
 
-class Redis():
+class Redis:
     """连接到 redis ,并且取得 channel 数据
     当接收到 redis 数据时，会调用 app(request)，并且对于 app(request) 的返回数据，会原样发送到 redis 服务器?
     request:
@@ -21,13 +21,13 @@ class Redis():
         _server_: self
 
     例：
-    import Client
+    import okws
 
     async def app(request):
         print(request)
 
-    clientX = Client(app)
-    asyncio.run(clientX.run())  # or asyncio.create_task(clientX.run())
+    redis = okws.Redis(channels,app)
+    asyncio.run(redis.run())  # or asyncio.create_task(redis.run()) 注意：如果 Redis gets destroyed, 会自动退出任务，请要运行时保持引用有效。
 
     """
 
@@ -35,9 +35,9 @@ class Redis():
         """初始化
 
         Args:
-            channel: subscribe channel
-            app (request): 回调函数，当接收到服务器数据时，会调用 app(request)
-            url (str, optional): [description]. Defaults to "redis://localhost".
+            channels: subscribe channels
+            app (request): 回调函数，当接收到 redis publish 数据时，会调用 app(request)
+            url (str, optional): redis url . Defaults to "redis://localhost".
         """
         self.url = url
         self.channels = channels if type(channels) == list else [channels]
@@ -57,17 +57,17 @@ class Redis():
                 if ret == -1:
                     return
             except UnicodeDecodeError:
-                logger.warning(f"can't decode {message} to utf-8!")
+                logger.warning(f"redis {self.channels}: can't decode {message} to utf-8!")
             except Exception:
-                logger.exception("redis app 出错")
+                logger.exception(f"redis {self.channels}: app 出错")
 
     async def run(self):
         try:
-            logger.info("READY")
+            logger.info(f"redis {self.channels}: READY")
             await self.run_app("READY")
             redis = await aioredis.create_redis_pool(self.url)
             channels = await redis.subscribe(*self.channels)
-            # logger.info(f"已连接 {channels}")
+            logger.info(f"redis {self.channels}: 已连接")
             await self.run_app("CONNECTED")
             for ch in channels:
                 task = asyncio.create_task(self.reader(ch))
@@ -76,10 +76,10 @@ class Redis():
             # await self.task
 
         except asyncio.CancelledError:
-            logger.info("任务取消")
+            logger.info(f"redis {self.channels}:任务取消")
         finally:
             await self.run_app("DISCONNECTED")
-            logger.info("redis client stopped.")
+            logger.info(f"redis {self.channels}: stopped.")
             for ch in channels:
                 ch.close()
             if redis is not None:

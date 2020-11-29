@@ -37,12 +37,12 @@ async def redis_msg(redis, event, msg, errorcode):
 
 class RedisCommand:
     # 处理通过 redis 发过来的用户命令
-    URL = REDIS_URL
 
-    def __init__(self):
+    def __init__(self, redis_url=REDIS_URL):
         self.ws_clients = {}
         self.tasks = {}
         self.redis = None
+        self.redis_url = redis_url
 
     async def ws_send(self, ctx):
         cmd = json.loads(ctx['_data_'])
@@ -75,7 +75,7 @@ class RedisCommand:
             return
         if 'name' in cmd:
             args = cmd.get('args', {})
-            client = okws.Websockets(okws.App(cmd['name'], args))
+            client = okws.Websockets(okws.App(cmd['name'], args, self.redis_url))
             self.ws_clients[cmd['name']] = client
             task = asyncio.create_task(client.run())
             self.tasks[cmd['name']] = task
@@ -87,7 +87,7 @@ class RedisCommand:
 
     async def execute(self, ctx):
         if ctx['_signal_'] == 'CONNECTED':
-            self.redis = await aioredis.create_redis_pool(self.URL)
+            self.redis = await aioredis.create_redis_pool(self.redis_url)
             logger.info('服务已启动！')
 
         elif ctx['_signal_'] == 'ON_DATA':
@@ -141,14 +141,17 @@ class RedisCommand:
         logger.info("server 退出！")
 
 
-async def run():
-    redis = okws.Redis(LISTEN_CHANNEL, RedisCommand())
+async def run(redis_url):
+    redis = okws.Redis(LISTEN_CHANNEL, RedisCommand(redis_url))
     await redis.run()
 
 
 async def main(conf):
+    params = dict(config['config'])
+    redis_url = params.get('redis', REDIS_URL)
+    logger.info(redis_url)
     await asyncio.gather(
-        run(),
+        run(redis_url),
         start_websockets(conf)
     )
 
