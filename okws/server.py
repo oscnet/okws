@@ -38,7 +38,7 @@ async def redis_msg(redis, event, msg, errorcode):
 class RedisCommand:
     # 处理通过 redis 发过来的用户命令
 
-    def __init__(self, redis_url=REDIS_URL):
+    def __init__(self, redis_url='redis://localhost'):
         self.ws_clients = {}
         self.tasks = {}
         self.redis = None
@@ -88,7 +88,7 @@ class RedisCommand:
     async def execute(self, ctx):
         if ctx['_signal_'] == 'CONNECTED':
             self.redis = await aioredis.create_redis_pool(self.redis_url)
-            logger.info('服务已启动！')
+            logger.info('okws 服务已启动！')
 
         elif ctx['_signal_'] == 'ON_DATA':
             # logging.info(ctx)
@@ -141,7 +141,7 @@ class RedisCommand:
         logger.info("server 退出！")
 
 
-async def run(redis_url):
+async def run(redis_url='redis://localhost'):
     redis = okws.Redis(LISTEN_CHANNEL, RedisCommand(redis_url))
     await redis.run()
 
