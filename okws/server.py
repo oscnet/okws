@@ -27,12 +27,12 @@ from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 logger = logging.getLogger(__name__)
 
 
-async def redis_msg(redis, event, msg, errorcode):
+async def redis_msg(id, redis, event, msg, errorcode):
     # event: info, warn, error
     msg = {"event": event, "message": msg, "errorCode": errorcode}
     msg = json.dumps(msg)
     logger.debug(msg)
-    await redis.set(REDIS_INFO_KEY, msg)
+    await redis.set(f"{REDIS_INFO_KEY}/{id}", msg)
 
 
 class RedisCommand:
@@ -47,12 +47,14 @@ class RedisCommand:
     async def ws_send(self, ctx):
         cmd = json.loads(ctx['_data_'])
         name = cmd['name']
+        id = cmd['id']
         if name in self.ws_clients:
             del cmd['name']
+            del cmd['id']
             await self.ws_clients[name].send(json.dumps(cmd))
-            await redis_msg(self.redis, 'info', '已发送到 websocket 服务器', 80000)
+            await redis_msg(id, self.redis, 'info', '已发送到 websocket 服务器', 80000)
         else:
-            await redis_msg(self.redis, 'error',
+            await redis_msg(id, self.redis, 'error',
                             f"没有对应的 {cmd['name']} websocket 连接！", 80011)
 
     async def close_ws(self, ctx):
@@ -60,17 +62,17 @@ class RedisCommand:
         if cmd['name'] in self.ws_clients:
             self.ws_clients[cmd['name']].close()
             del self.ws_clients[cmd['name']]
-            await redis_msg(self.redis, 'info', '', 80000)
+            await redis_msg(cmd['id'], self.redis, 'info', '', 80000)
         else:
             msg = f"没有对应的 {cmd['name']} websocket 连接！"
             logging.warning(msg)
-            await redis_msg(self.redis, 'error', msg, 80011)
+            await redis_msg(cmd['id'], self.redis, 'error', msg, 80011)
 
     async def open_ws(self, ctx):
         cmd = json.loads(ctx['_data_'])
         if cmd['name'] in self.ws_clients:
             msg = f"{cmd['name']} 已存在!"
-            await redis_msg(self.redis, 'error', msg, 80001)
+            await redis_msg(cmd['id'], self.redis, 'error', msg, 80001)
             logger.warning(msg)
             return
         if 'name' in cmd:
@@ -79,10 +81,10 @@ class RedisCommand:
             self.ws_clients[cmd['name']] = client
             task = asyncio.create_task(client.run())
             self.tasks[cmd['name']] = task
-            await redis_msg(self.redis, 'info', '', 80000)
+            await redis_msg(cmd['id'], self.redis, 'info', '', 80000)
         else:
             msg = f"指令错误:{cmd}"
-            await redis_msg(self.redis, 'error', msg, 80010)
+            await redis_msg(cmd['id'], self.redis, 'error', msg, 80010)
             logger.warning(msg)
 
     async def execute(self, ctx):
@@ -106,9 +108,9 @@ class RedisCommand:
                     await self.close_ws(ctx)
                 elif cmd['op'] == 'quit_server':
                     ctx['_server_'].close()
-                    await redis_msg(self.redis, 'info', '', 80000)
+                    await redis_msg(cmd['id'], self.redis, 'info', '', 80000)
                 elif cmd['op'] == 'servers':
-                    await redis_msg(self.redis, 'info', list(self.ws_clients.keys()), 80000)
+                    await redis_msg(cmd['id'], self.redis, 'info', list(self.ws_clients.keys()), 80000)
                 else:
                     # 发送到对应的 ws client
                     await self.ws_send(ctx)
@@ -116,7 +118,7 @@ class RedisCommand:
             except Exception:
                 msg = f"指令错误：{ctx['_data_']}"
                 logging.exception(msg)
-                await redis_msg(self.redis, 'error', msg, 80010)
+                await redis_msg(cmd['id'], self.redis, 'error', msg, 80010)
 
     async def __call__(self, *args, **kwargs):
         await self.execute(args[0])
