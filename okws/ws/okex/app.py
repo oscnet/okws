@@ -46,13 +46,13 @@ class App(Interceptor):
                               [normal['write'], candle['write']])
 
             elif "event" in request['DATA']:
-                await self.redis.publish(f"okex/{self.name}/event", request['_data_'])
+                await self.redis.publish(f"okex/{self.name}/event", json.dumps(request['DATA']))
                 if request['DATA']['event'] == 'error':
                     logger.warning(f"{self.name} 收到错误信息：{request['DATA']}")
                 else:
                     logger.info(f"{self.name} ：{request['DATA']}")
             else:
-                logger.warn(f"{self.name} 收到未知数据：{request['_data_']}")
+                logger.warning(f"{self.name} 收到未知数据：{request['DATA']}")
 
     async def close(self):
         if self.redis is not None:

@@ -50,10 +50,16 @@ class Redis():
         return await self.app(request)
 
     async def reader(self, ch):
-        async for message in ch.iter(encoding='utf-8'):
-            ret = await self.run_app("ON_DATA", _data_=message)
-            if ret == -1:
-                return
+        async for message in ch.iter():
+            try:
+                msg = message.decode('utf-8')
+                ret = await self.run_app("ON_DATA", _data_=msg)
+                if ret == -1:
+                    return
+            except UnicodeDecodeError:
+                logger.warning(f"can't decode {message} to utf-8!")
+            except Exception:
+                logger.exception("redis app 出错")
 
     async def run(self):
         try:
