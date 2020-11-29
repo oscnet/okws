@@ -20,6 +20,7 @@ class _Client:
         # if self.redis is None:
         #     self.redis = await aioredis.create_redis(self.redis_url)
         ctx = {
+            'id': self.id,
             'name': name,
             'path': path,
             'redis': self.redis
@@ -39,6 +40,8 @@ class _Client:
         self.redis_url = redis_url
         self.redis = None
         self.interceptors = [normal['read'], candle['read']]
+        self.id = id(self)
+        self.redis_path = f"{REDIS_INFO_KEY}/{self.id}"
 
     async def init(self):
         self.redis = await aioredis.create_redis(self.redis_url)
@@ -51,48 +54,53 @@ class _Client:
 
     async def open_ws(self, name, auth_params={}):
         await self.send({
+            'id': self.id,
             'op': 'open',
             'name': name,
             'args': auth_params
         })
         # await self.redis.publish_json(LISTEN_CHANNEL)
         await asyncio.sleep(1)
-        ret = await self.redis.get(REDIS_INFO_KEY, encoding='utf-8')
+        ret = await self.redis.get(self.redis_path, encoding='utf-8')
         return json.loads(ret)
 
     async def subscribe(self, name, channels: Union[list, str]):
         await self.send({
+            'id': self.id,
             'op': 'subscribe',
             'name': name,
             'args': channels if type(channels) == list else [channels]
         })
         await asyncio.sleep(0)
-        ret = await self.redis.get(REDIS_INFO_KEY, encoding='utf-8')
+        ret = await self.redis.get(self.redis_path, encoding='utf-8')
         return json.loads(ret)
 
     async def close_ws(self, name):
         await self.send({
+            'id': self.id,
             'op': 'close',
             'name': name
         })
         await asyncio.sleep(1)
-        ret = await self.redis.get(REDIS_INFO_KEY, encoding='utf-8')
+        ret = await self.redis.get(self.redis_path, encoding='utf-8')
         return json.loads(ret)
 
     async def server_quit(self):
         await self.send({
+            'id': self.id,
             'op': 'quit_server'
         })
         await asyncio.sleep(1)
-        ret = await self.redis.get(REDIS_INFO_KEY, encoding='utf-8')
+        ret = await self.redis.get(self.redis_path, encoding='utf-8')
         return json.loads(ret)
 
     async def servers(self):
         await self.send({
+            'id': self.id,
             'op': 'servers'
         })
         await asyncio.sleep(1)
-        ret = await self.redis.get(REDIS_INFO_KEY, encoding='utf-8')
+        ret = await self.redis.get(self.redis_path, encoding='utf-8')
         return json.loads(ret)
 
     async def redis_clear(self, path="okex/*"):
