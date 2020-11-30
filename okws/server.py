@@ -126,7 +126,11 @@ class RedisCommand:
         await self.execute(ctx)
         if ctx['_signal_'] != 'ON_DATA':
             # 向 `OKWS_INFO` 频道发送信号，当 `okws` 重启时，客户端就可以在这个频道收到 `CONNECTED` 信号时重新连接 websocket 及订阅。
-            await self.redis.publish(OKWS_INFO, json.dumps({'_signal_': ctx['_signal_']}))
+            try:
+                await self.redis.publish(OKWS_INFO, ctx['_signal_'])
+            except (RuntimeError, aioredis.errors.PoolClosedError, aioredis.errors.ConnectionForcedCloseError):
+                # 当任务取消时， aioredis 连接池可能会关闭一下，或会发出 RuntimeError: this is unexpected。
+                pass
 
     def check_tasks(self):
         remove_names = []
@@ -154,9 +158,11 @@ async def run(redis_url='redis://localhost'):
 
 
 async def main(conf):
-    params = dict(config['config'])
-    redis_url = params.get('redis', REDIS_URL)
-    logger.info(redis_url)
+    if conf is not None:
+        params = dict(conf['config'])
+        redis_url = params.get('redis', REDIS_URL)
+    else:
+        redis_url = REDIS_URL
     await asyncio.gather(
         run(redis_url),
         start_websockets(conf)
