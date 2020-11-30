@@ -7,8 +7,8 @@ from typing import Union
 import aioredis
 from okws.interceptor import execute
 
-from okws.ws.okex.candle import config as candle
-from okws.ws.okex.normal import config as normal
+from okws.ws2redis.candle import config as candle
+from okws.ws2redis.normal import config as normal
 
 from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 
