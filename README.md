@@ -139,13 +139,14 @@ logger.info(ret)
 
 ## redis
 
-
 1. 如果要在 websocket 发送数据时获得通知，可以使用 redis 订阅
 
     * redis 的 key 为 "okex/name/频道名"
     * 如果 websocket 返回的是 event, redis 的 key 为 "okex/name/event"
 
 2. K 线数据除了用类似 `await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT",'n':100})` 取得外，也可以订阅 `'okex/name/spot/candle60s:instrument_id'` 频道，可以在有新 K 线时得到通知。通知内容为最新确定的 K 线数据。
+
+3. okws 会向 `settings.OKWS_INFO`（缺省为 'okws/info'）频道发送信号，当 `okws` 重启时，客户端就可以在这个频道收到 `CONNECTED` 信号时重新连接 websocket 及订阅。
  
 ## 测试
 
