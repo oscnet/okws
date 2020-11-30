@@ -16,6 +16,7 @@ class Websockets:
         _signal_: 有 READY，CONNECTED，ON_DATA，DISCONNECTED，EXIT。
              READY 当要开始联接 ws 服务器前
              CONNECTED 已成功联接上 ws 服务器
+             TIMEOUT  当不能从服务器取得数据，超出 超时时发出。
              ON_DATA  接收到 ws 服务器数据，数据在 request['_data_']中.
              DISCONNECTED 当联接中断时发送
              EXIT  clientX 退出
@@ -33,7 +34,7 @@ class Websockets:
 
     """
 
-    def __init__(self, app, ws_url="wss://real.okex.com:8443/ws/v3"):
+    def __init__(self, app, ws_url="wss://real.okex.com:8443/ws/v3", timeout=25):
         """初始化
 
         Args:
@@ -41,6 +42,7 @@ class Websockets:
             ws_url (str, optional): [description]. Defaults to "wss://real.okex.com:8443/ws/v3".
         """
         self.ws_url = ws_url
+        self.timeout = timeout
         self.ws = None
         self.app = app
         self.lock = None
@@ -73,13 +75,11 @@ class Websockets:
                     # await asyncio.sleep(0)
                     try:
                         res_b = await asyncio.wait_for(
-                            self.ws.recv(), timeout=25
+                            self.ws.recv(), timeout=self.timeout
                         )
                         await self.run_app("ON_DATA", _data_=res_b)
                     except TimeoutError:
-                        logger.debug(f"websocket ping...")
-                        ret = await self.ping()
-                        logger.debug(f"websocket {ret}")
+                        await self.run_app('TIMEOUT')
 
         except (ConnectionClosed, socket.error):
             logger.exception("连接断开")

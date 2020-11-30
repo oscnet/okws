@@ -5,7 +5,7 @@ import json
 import logging
 import zlib
 from collections.abc import Mapping
-
+import asyncio
 from okws.interceptor import add_response, Interceptor
 
 """用法:
@@ -31,24 +31,36 @@ def _inflate(data):
     return inflated
 
 
-class _decode(Interceptor):
-    def __init__(self, cfg):
+class Decode(Interceptor):
+    def __init__(self, cfg={}):
         self.cfg = cfg
+
+    async def ping(self, ws):
+        await asyncio.wait_for(ws.send("ping"), timeout=10)
+        # return await asyncio.wait_for(self.ws.recv(), timeout=10)
 
     async def enter(self, ctx):
         if ctx["_signal_"] == "CONNECTED":
-            if self.cfg.get('password','')!='':
+            if self.cfg.get('password', '') != '':
                 # 登录
                 await logon(ctx, self.cfg)
 
         elif ctx["_signal_"] == "ON_DATA":
             try:
                 buff = _inflate(ctx["_data_"]).decode("utf-8")
-                msg = json.loads(buff)
-                ctx["DATA"] = msg
+                if buff == 'pong':
+                    ctx["_signal_"] = "PING"
+                    # ctx["DATA"] = {}
+                else:
+                    ctx["DATA"] = json.loads(buff)
             except Exception:
                 logging.exception(f"不能解析收到的交易所信息:{buff}")
                 ctx["DATA"] = {}
+
+        elif ctx["_signal_"] == 'TIMEOUT':
+            # ping server
+            await self.ping(ctx["_server_"])
+            # logger.debug(f"websocket {ret}")
 
     async def leave(self, ctx):
         if ctx.get("response"):
@@ -59,10 +71,6 @@ class _decode(Interceptor):
                 elif isinstance(res, str):
                     resp.append(res)
             ctx["response"] = resp
-
-
-def decode(cfg={}):
-    return _decode(cfg)
 
 
 # 一些工具函数
@@ -121,5 +129,5 @@ def unsubscribe(ctx, channels):
 
 def on_channel(ctx, channel):
     return (ctx.get("_signal_") == "ON_DATA") and (
-        ctx["DATA"].get("table") == channel
+            ctx["DATA"].get("table") == channel
     )

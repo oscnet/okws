@@ -4,7 +4,7 @@ import json
 import logging
 import aioredis
 from okws.interceptor import Interceptor, execute
-from okws.ws.okex.decode import decode
+from okws.okex import Decode
 from .candle import config as candle
 from .normal import config as normal
 
@@ -18,7 +18,7 @@ class App(Interceptor):
         self.name = name
         self.redis_url = redis_url
         self.redis = None
-        self.decode = decode(exchange_params)
+        self.decode = Decode(exchange_params)
 
     async def __call__(self, ctx):
         return await execute(ctx, [self.decode, self])
