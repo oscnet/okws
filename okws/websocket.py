@@ -56,7 +56,7 @@ class Websockets:
             for res in responses:
                 logger.info(f"send cmd:{res}")
                 await self.send(res)
-                await asyncio.sleep(1)
+                # await asyncio.sleep(1)
 
     async def ping(self):
         await asyncio.wait_for(self.send("ping"), timeout=10)

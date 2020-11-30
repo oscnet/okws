@@ -39,11 +39,11 @@ def parse_argv(argv):
             usage()
 
 
-async def start_websockets(config):
+async def execute_config_command(config):
     if config is None:
         # 没有配置文件
         return
-    okex = await okws.create_control()
+    okex = await okws.client()
     await asyncio.sleep(2)
     for section in config.sections():
         if section != 'config':

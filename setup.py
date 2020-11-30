@@ -15,7 +15,7 @@ classifiers = [
 
 setup(
     name="okws",
-    version="0.1.1",
+    version="0.1.2",
     description="通过 redis 提供 okex websocket 服务数据",
     url="https://github.com/oscnet/okws",
     author="oscnet",

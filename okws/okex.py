@@ -9,13 +9,14 @@ import asyncio
 from .interceptor import add_response, Interceptor
 
 """用法:
-    okex(), okex(cfg)    
+    Decode(), Decode(cfg)    
     cfg: {apiKey,secret,password}
     如果有 apiKey，则当联接到 ws 服务器时，自动登录
     主要功能：
     * 将 ws 发送的 byte 数据转换到 utf-8
     * 将 json 字符串转换成 map 到 ctx['DATA']中，原始数据在 ctx['_data_'] 中
     * 如果有登录参数，则在联接到 ws 服务器时，自动登录
+    * 超时自动发送 ping 到 ws 服务器
 """
 
 

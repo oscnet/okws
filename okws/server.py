@@ -21,7 +21,7 @@ import logging
 import aioredis
 import sys
 import okws
-from .config import start_websockets, parse_argv
+from .config import execute_config_command, parse_argv
 from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL, OKWS_INFO
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ async def main(conf):
         redis_url = REDIS_URL
     await asyncio.gather(
         run(redis_url),
-        start_websockets(conf)
+        execute_config_command(conf)
     )
 
 
