@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 
-install_requires = ["asyncio", "aioredis", "websockets","tenacity"]
+install_requires = ["asyncio", "aioredis", "websockets", "tenacity"]
 
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -11,7 +11,6 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
 ]
-
 
 setup(
     name="okws",
@@ -25,7 +24,11 @@ setup(
     keywords="exchange websockets api",
     packages=find_packages(exclude=["tests"]),
     install_requires=install_requires,
-    tests_require=['pytest','pytest-asyncio'],
+    tests_require=['pytest', 'pytest-asyncio'],
     test_suite='tests',
     # include_package_data=True,
+    entry_points={
+        "console_scripts": [
+            "okws=okws.server:cli"]
+    }
 )

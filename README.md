@@ -83,8 +83,8 @@ if __name__ == '__main__':
 
 1. 启动服务
 
-`python -m okws.server`
-`python -m okws.server -c 配置文件`
+`okws`
+`okws -c 配置文件`
 
 2. 使用示例
 

@@ -169,7 +169,7 @@ async def main(conf):
     )
 
 
-if __name__ == '__main__':
+def cli():
     try:
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(filename)s[%(lineno)d] - %(levelname)s: %(message)s')
@@ -177,3 +177,7 @@ if __name__ == '__main__':
         asyncio.run(main(config))
     except KeyboardInterrupt:
         logging.info('Ctrl+C 完成退出')
+
+
+if __name__ == '__main__':
+    cli()
