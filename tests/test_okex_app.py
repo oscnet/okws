@@ -7,6 +7,7 @@ import os
 import aioredis
 import ccxt.async_support as ccxt
 
+
 pytestmark = pytest.mark.asyncio
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ async def public_test(client):
     await client.send(json.dumps(
         {"op": "subscribe", "args": ["swap/candle300s:BTC-USD-SWAP"]}))
     await asyncio.sleep(3)
-    proxy = await okws.create_control()
+    proxy = await okws.client()
 
     # test candle
     k = await proxy.get('pub', 'swap/candle300s', {'instrument_id': 'BTC-USD-SWAP'})
@@ -71,7 +72,7 @@ async def account(okex, ws_client, proxy):
 
 async def private_test(cl):
     okex = ccxt.okex(get_okex_params())
-    proxy = await okws.create_control()
+    proxy = await okws.client()
 
     await asyncio.sleep(5)
 
@@ -99,8 +100,8 @@ async def redis_delete_all():
 async def test_app():
     # await redis_delete_all()
 
-    client1 = okws.Websockets(okws.App('pub'))
-    client2 = okws.Websockets(okws.App('test', get_okex_params()))
+    client1 = okws.Websockets(okws.ws2redis.app.App('pub'))
+    client2 = okws.Websockets(okws.ws2redis.app.App('test', get_okex_params()))
 
     # with pytest.raises(CancelledError):
     await asyncio.gather(

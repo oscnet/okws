@@ -34,7 +34,7 @@ import okws
 import asyncio
 
 async def client():
-    okex = await okws.create_control()
+    okex = await okws.client()
     
     # 连接到 websocket 服务器
     await okex.open_ws('tests', {'apiKey':'','secret':'','password':''})
@@ -95,7 +95,7 @@ import okws
 
 logger = logging.getLogger(__name__)
 
-okex = await okws.create_control()
+okex = await okws.client()
 ret = await okex.open_ws('tests',{'apiKey':'','secret':'','password':''})  # 连接到 okex websockets
 logger.info(ret)
 

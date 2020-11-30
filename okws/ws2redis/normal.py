@@ -1,9 +1,6 @@
 # 处理一般 websockets 数据的保存和取出
 
 
-# 不支持 公共-400档深度频道
-
-
 import logging
 import json
 
@@ -69,7 +66,7 @@ async def write(ctx):
         elif table == 'futures/instruments':
             key = f"okex/{ctx['name']}/{table}"
             # 先删除原有数据
-            await redis_clear(ctx['redis'], key+'*')
+            await redis_clear(ctx['redis'], key + '*')
             for data in ctx['data']['data'][0]:
                 await ctx['redis'].sadd(key, data['instrument_id'])
                 await ctx['redis'].hmset_dict(f"{key}:{data['instrument_id']}", data)

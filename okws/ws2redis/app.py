@@ -4,24 +4,30 @@ import json
 import logging
 import aioredis
 from okws.interceptor import Interceptor, execute
-from okws.ws.okex.decode import decode
-from .candle import config as candle
-from .normal import config as normal
+import okws
+from okws.ws2redis.candle import config as candle
+from okws.ws2redis.normal import config as normal
 
 logger = logging.getLogger(__name__)
 
 
-class App(Interceptor):
+def App(name, api_params={}, redis_url="redis://localhost"):
+    decode = okws.okex.Decode(api_params)
+    ws2redis = Ws2redis(name, redis_url)
+
+    async def app(ctx):
+        await execute(ctx, [decode, ws2redis])
+
+    return app
+
+
+class Ws2redis(Interceptor):
     MAX_ARRAY_LENGTH = 100,
 
-    def __init__(self, name, exchange_params={}, redis_url="redis://localhost"):
+    def __init__(self, name, redis_url="redis://localhost"):
         self.name = name
         self.redis_url = redis_url
         self.redis = None
-        self.decode = decode(exchange_params)
-
-    async def __call__(self, ctx):
-        return await execute(ctx, [self.decode, self])
 
     async def enter(self, request):
         # logger.debug(f"request={request}")

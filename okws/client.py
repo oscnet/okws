@@ -7,15 +7,15 @@ from typing import Union
 import aioredis
 from okws.interceptor import execute
 
-from okws.ws.okex.candle import config as candle
-from okws.ws.okex.normal import config as normal
+from okws.ws2redis.candle import config as candle
+from okws.ws2redis.normal import config as normal
 
 from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 
 logger = logging.getLogger(__name__)
 
 
-class _Client:
+class Client:
     async def get(self, name, path, params={}):
         # if self.redis is None:
         #     self.redis = await aioredis.create_redis(self.redis_url)
@@ -111,8 +111,8 @@ class _Client:
             self.redis.close()
 
 
-async def create_control(redis_url=REDIS_URL) -> _Client:
+async def client(redis_url=REDIS_URL) -> Client:
     # 使用些函数初始化 OKEX 类
-    okex = _Client(redis_url)
+    okex = Client(redis_url)
     await okex.init()
     return okex

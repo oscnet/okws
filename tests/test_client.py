@@ -115,7 +115,7 @@ async def client():
     api = ccxt.okex(get_okex_params())
 
     await asyncio.sleep(2)
-    okex = await okws.create_control()
+    okex = await okws.client()
     await okex.redis_clear()
 
     ret = await okex.open_ws('tests', get_okex_params())
