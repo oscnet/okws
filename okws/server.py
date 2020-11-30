@@ -22,7 +22,7 @@ import aioredis
 import sys
 import okws
 from .config import start_websockets, parse_argv
-from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
+from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL, OKWS_INFO
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +47,14 @@ class RedisCommand:
     async def ws_send(self, ctx):
         cmd = json.loads(ctx['_data_'])
         name = cmd['name']
-        id = cmd['id']
+        cid = cmd['id']
         if name in self.ws_clients:
             del cmd['name']
             del cmd['id']
             await self.ws_clients[name].send(json.dumps(cmd))
-            await redis_msg(id, self.redis, 'info', '已发送到 websocket 服务器', 80000)
+            await redis_msg(cid, self.redis, 'info', '已发送到 websocket 服务器', 80000)
         else:
-            await redis_msg(id, self.redis, 'error',
+            await redis_msg(cid, self.redis, 'error',
                             f"没有对应的 {cmd['name']} websocket 连接！", 80011)
 
     async def close_ws(self, ctx):
@@ -89,7 +89,6 @@ class RedisCommand:
 
     async def execute(self, ctx):
         if ctx['_signal_'] == 'CONNECTED':
-            self.redis = await aioredis.create_redis_pool(self.redis_url)
             logger.info('okws 服务已启动！')
 
         elif ctx['_signal_'] == 'ON_DATA':
@@ -121,7 +120,13 @@ class RedisCommand:
                 await redis_msg(cmd['id'], self.redis, 'error', msg, 80010)
 
     async def __call__(self, *args, **kwargs):
-        await self.execute(args[0])
+        if self.redis is None:
+            self.redis = await aioredis.create_redis_pool(self.redis_url)
+        ctx = args[0]
+        await self.execute(ctx)
+        if ctx['_signal_'] != 'ON_DATA':
+            # 向 `OKWS_INFO` 频道发送信号，当 `okws` 重启时，客户端就可以在这个频道收到 `CONNECTED` 信号时重新连接 websocket 及订阅。
+            await self.redis.publish(OKWS_INFO, json.dumps({'_signal_': ctx['_signal_']}))
 
     def check_tasks(self):
         remove_names = []
@@ -140,7 +145,7 @@ class RedisCommand:
 
         if self.redis is not None:
             self.redis.close()
-        logger.info("server 退出！")
+        logger.info("okws 退出！")
 
 
 async def run(redis_url='redis://localhost'):

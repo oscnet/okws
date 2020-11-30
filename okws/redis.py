@@ -82,11 +82,11 @@ class Redis:
             logger.info(f"redis {self.channels}: stopped.")
             for ch in channels:
                 ch.close()
+            await self.run_app("EXIT")
             if redis is not None:
                 redis.close()
                 await redis.wait_closed()
-                redis = None
-            await self.run_app("EXIT")
+
 
     def close(self):
         for task in self.tasks:
