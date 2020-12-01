@@ -1,0 +1,28 @@
+[Unit]
+Description=okex websocket to redis
+After=network.target redis.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/okws  
+ExecStop=/bin/kill -s TERM $MAINPID
+PIDFile=/var/run/okws/okws.pid
+Restart=on-failure
+User=ubuntu
+Group=ubuntu
+
+
+StandardOutput=file:/var/log/okws/okws.log
+StandardError=file:/var/log/okws/okws.log
+
+ReadOnlyDirectories=/
+ReadWriteDirectories=-/var/lib/okws
+ReadWriteDirectories=-/var/log/okws
+ReadWriteDirectories=-/var/run/okws
+
+NoNewPrivileges=true
+
+
+[Install]
+WantedBy=multi-user.target
+Alias=okws.service

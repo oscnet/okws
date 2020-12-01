@@ -83,8 +83,30 @@ if __name__ == '__main__':
 
 1. 启动服务
 
+* 自行启动
+
 `okws`
+
 `okws -c 配置文件`
+
+* 使用 `systemd`
+
+修改 `okws.service`
+```bash
+ln -s okws.service /etc/systemd/system/okws.service
+sudo systemctl daemon-reload
+sudo mkdir /var/log/okws
+sudo chown xxx /var/log/okws
+sudo systemctl start okws.service
+```
+
+* MacOs
+
+```bash
+cp okws.ex.plist ~/Library/LaunchAgents/
+launchctl load okws.ex.plist
+```
+logfile:/usr/local/var/log/okws.log
 
 2. 使用示例
 
