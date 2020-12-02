@@ -16,6 +16,7 @@ class Redis:
              READY 当要开始联接 ws 服务器前
              CONNECTED 已成功联接上 redis 服务器
              ON_DATA  接收到 redis 服务器 对应 channel 数据，数据在 request['_data_']中.
+                       request['_channel_'] 侦听的频道
              DISCONNECTED 当联接中断时发送
              EXIT  clientX 退出
         _server_: self
@@ -53,13 +54,13 @@ class Redis:
         async for message in ch.iter():
             try:
                 msg = message.decode('utf-8')
-                ret = await self.run_app("ON_DATA", _data_=msg)
+                ret = await self.run_app("ON_DATA", _data_=msg, _channel_=ch.name.decode('utf-8'))
                 if ret == -1:
                     return
             except UnicodeDecodeError:
-                logger.warning(f"redis {self.channels}: can't decode {message} to utf-8!")
+                logger.warning(f"redis {ch.name.decode('utf-8')}: can't decode {message} to utf-8!")
             except Exception:
-                logger.exception(f"redis {self.channels}: app 出错")
+                logger.exception(f"redis {ch.named.ecode('utf-8')}: app 出错")
 
     async def run(self):
         try:
@@ -86,7 +87,6 @@ class Redis:
             if redis is not None:
                 redis.close()
                 await redis.wait_closed()
-
 
     def close(self):
         for task in self.tasks:
