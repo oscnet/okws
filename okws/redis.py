@@ -1,9 +1,10 @@
 import asyncio
 import logging
 from typing import Union
-from .settings import REDIS_URL
 
 import aioredis
+
+from .settings import REDIS_URL
 
 logger = logging.getLogger(__name__)
 
@@ -48,28 +49,38 @@ class Redis:
     async def run_app(self, signal, **request):
         request["_signal_"] = signal
         request["_server_"] = self
-        return await self.app(request)
+        for channel in request['_channels_']:
+            request['_channel_'] = channel
+            await self.app(request)
 
     async def reader(self, ch):
+        try:
+            # ch.name 跟订阅时是一样的
+            name = ch.name.decode('utf-8')
+        except Exception:
+            logger.exception(f"redis channel name decode error")
+            name = ''
+
         async for message in ch.iter():
             try:
                 msg = message.decode('utf-8')
-                ret = await self.run_app("ON_DATA", _data_=msg, _channel_=ch.name.decode('utf-8'))
+                ret = await self.run_app("ON_DATA", _data_=msg, _channels_=[name])
                 if ret == -1:
                     return
             except UnicodeDecodeError:
-                logger.warning(f"redis {ch.name.decode('utf-8')}: can't decode {message} to utf-8!")
+                logger.warning(
+                    f"redis {name}: can't decode {message} to utf-8!")
             except Exception:
-                logger.exception(f"redis {ch.named.ecode('utf-8')}: app 出错")
+                logger.exception(f"redis {name}: app 出错")
 
     async def run(self):
         try:
             logger.info(f"redis {self.channels}: READY")
-            await self.run_app("READY")
+            await self.run_app("READY", _channels_=self.channels)
             redis = await aioredis.create_redis_pool(self.url)
             channels = await redis.subscribe(*self.channels)
             logger.info(f"redis {self.channels}: 已连接")
-            await self.run_app("CONNECTED")
+            await self.run_app("CONNECTED", _channels_=self.channels)
             for ch in channels:
                 task = asyncio.create_task(self.reader(ch))
                 self.tasks.append(task)
@@ -79,11 +90,11 @@ class Redis:
         except asyncio.CancelledError:
             logger.info(f"redis {self.channels}:任务取消")
         finally:
-            await self.run_app("DISCONNECTED")
+            await self.run_app("DISCONNECTED", _channels_=self.channels)
             logger.info(f"redis {self.channels}: stopped.")
             for ch in channels:
                 ch.close()
-            await self.run_app("EXIT")
+            await self.run_app("EXIT", _channels_=self.channels)
             if redis is not None:
                 redis.close()
                 await redis.wait_closed()
