@@ -27,6 +27,7 @@ async def send_exit_cmd(client):
 async def on_cmd(request):
     if request['_signal_'] == 'ON_DATA':
         msg = request['_data_']
+        assert request['_channel_']
         logger.info(f"Got message:{msg} on {request['_channel_']}")
         assert msg == 'exit' or msg == 'Hello1' or msg == 'Hello2'
         assert request['_channel_'] in CHANNELS
