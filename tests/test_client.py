@@ -6,7 +6,7 @@ import aioredis
 import ccxt.async_support as ccxt
 import pytest
 import okws
-import okws.server as server
+import okws.redis_cmd as server
 
 from tests.test_okex_app import get_okex_params
 

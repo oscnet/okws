@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 
-install_requires = ["asyncio", "aioredis", "websockets", "tenacity"]
+install_requires = ["asyncio", "aioredis", "websockets", "tenacity","pyyaml"]
 
 classifiers = [
     "Development Status :: 4 - Beta",

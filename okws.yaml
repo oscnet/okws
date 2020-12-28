@@ -1,0 +1,11 @@
+# 配置文件示例
+servers:
+  - name: test
+    apiKey: ""
+    secret: ""
+    password: ""
+
+subscribes:
+  - server: test
+    channels:
+      - "spot/ticker:ETH-USDT"
