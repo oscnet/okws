@@ -29,6 +29,6 @@ setup(
     # include_package_data=True,
     entry_points={
         "console_scripts": [
-            "okws=okws.server:cli"]
+            "okws=okws.cli.cli:main"]
     }
 )

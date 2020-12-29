@@ -1,4 +1,8 @@
 # 配置文件示例
+config:
+  redis_url: "redis://localhost"
+  maxrow: 1000
+
 servers:
   - name: test
     apiKey: ""

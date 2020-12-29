@@ -1,17 +1,25 @@
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
+redis_url = "redis://localhost"
+
+SIGNAL_CHANNEL = "okex/signals"
+
+
 import getopt
 import logging
 import os
 import os.path
 import sys
-
 from yaml import Loader, load
-from .main import run
 
 logger = logging.getLogger(__name__)
 
 
 def usage():
-    print('python -m signals.server -c <configfile>')
+    print('okws -c <configfile>')
     exit(1)
 
 
@@ -43,7 +51,6 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(module)s[%(lineno)d] - %(levelname)s: %(message)s')
 
-    # logger.info(sys.argv)
     config = parse_argv(sys.argv)
     # logger.info(config)
     run(config)
