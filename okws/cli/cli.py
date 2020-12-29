@@ -1,12 +1,7 @@
 import asyncio
 import logging
-
-logger = logging.getLogger(__name__)
-
-redis_url = "redis://localhost"
-
-SIGNAL_CHANNEL = "okex/signals"
-
+import okws
+from .status import ws_status_listener, okws_exist, open_ws, okws_connect, subscribe
 
 import getopt
 import logging
@@ -47,14 +42,41 @@ def parse_argv(argv):
     usage()
 
 
+async def execute_config_task(config):
+    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
+    await asyncio.sleep(1)
+    okex = await okws.client(redis_url)
+    if not await okws_exist(okex):
+        logger.warning(f"未检测到 okws 运行，程序退出。")
+        return
+
+    asyncio.create_task(okws_connect(config))
+    asyncio.create_task(ws_status_listener(config))
+
+    await open_ws(okex, config)
+    await asyncio.sleep(1)
+    # 如果相应的 ws 已经连接的话，需要重新订阅一下
+    await subscribe(okex, config)
+
+
+async def execute(config):
+    try:
+        logger.info(config)
+        redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
+        listen_channel = config['settings'].get('LISTEN_CHANNEL', 'trade-ws')
+        redis = okws.Redis(listen_channel, okws.RedisCommand(redis_url))
+        await asyncio.gather(
+            redis.run(),
+            execute_config_task(config)
+        )
+    except KeyboardInterrupt:
+        logging.info('Ctrl+C 完成退出')
+
+
 def main():
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(module)s[%(lineno)d] - %(levelname)s: %(message)s')
 
     config = parse_argv(sys.argv)
     # logger.info(config)
-    run(config)
-
-
-if __name__ == '__main__':
-    main()
+    asyncio.run(execute(config))

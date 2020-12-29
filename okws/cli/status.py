@@ -25,14 +25,12 @@ async def subscribe(client, config, name=None):
         if name is None or sub['server'] == name:
             await client.subscribe(sub['server'], sub['channels'])
 
-    for sub in config['signals']:
-        # logger.info(sub)
-        if name is None or sub['server'] == name:
-            await client.subscribe(sub['server'], sub['channels'])
-
 
 # 订阅 okws 服务信息，使得 okws connect 时开启 ws 服务
-async def okws_connect(client, config):
+async def okws_connect(config):
+    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
+    client = await okws.client(redis_url)
+
     async def app(ctx):
         # logger.warning(f"{ctx}")
         if ctx.get('_signal_') == 'ON_DATA' and ctx.get('_data_') == 'CONNECTED':
@@ -62,8 +60,11 @@ def ws_status(client, config):
     return _connect
 
 
-async def ws_status_listener(client, config):
+async def ws_status_listener(config):
     # 订阅 ws 服务器 connect 事件，以便 ws 服务器断线时重联
+    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
+    client = await okws.client(redis_url)
+
     servers = map(lambda x: x['name'], config['servers'])
     channels = list(map(lambda x: f"okex/{x}/event", servers))
     # logger.info(f"listen: {channels}")
