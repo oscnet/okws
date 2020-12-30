@@ -44,6 +44,8 @@ class Ws2redis(Interceptor):
             logger.info(f"{self.name} 退出")
             await self.close()
         elif request['_signal_'] == 'ON_DATA':
+            # 用于指示收到数据
+            await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'ON_DATA'}))
             logger.debug(request['DATA'])
             if "table" in request['DATA']:
                 await self.redis.publish(f"okex/{self.name}/{request['DATA']['table']}", json.dumps(request['DATA']))
