@@ -11,7 +11,9 @@ from okws.ws2redis.normal import config as normal
 logger = logging.getLogger(__name__)
 
 
-def App(name, api_params={}, redis_url="redis://localhost"):
+def App(name, api_params=None, redis_url="redis://localhost"):
+    if api_params is None:
+        api_params = {}
     decode = okws.okex.Decode(api_params)
     ws2redis = Ws2redis(name, redis_url)
 
