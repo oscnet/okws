@@ -8,29 +8,29 @@ logger = logging.getLogger(__name__)
 
 
 async def okws_exist(client):
-    info = await client.servers()
-    # logger.info(info)
+    client.servers()
+    await asyncio.sleep(1)
+    info = client.get_return_info()
     return type(info['message']) == list
 
 
 async def open_ws(client, config):
     # 连接到 ws 服务器
     for server in config['servers']:
-        await client.open_ws(server['name'], server)
+        client.open_ws(server['name'], server)
+    await asyncio.sleep(5)
 
 
 async def subscribe(client, config, name=None):
     # 发送订阅命令
     for sub in config.get('subscribes', []):
         if name is None or sub['server'] == name:
-            await client.subscribe(sub['server'], sub['channels'])
+            client.subscribe(sub['server'], sub['channels'])
+            await asyncio.sleep(1)
 
 
 # 订阅 okws 服务信息，使得 okws connect 时开启 ws 服务
-async def okws_connect(config):
-    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
-    client = await okws.client(redis_url)
-
+async def okws_connect(client, config):
     async def app(ctx):
         # logger.warning(f"{ctx}")
         if ctx.get('_signal_') == 'ON_DATA' and ctx.get('_data_') == 'CONNECTED':
@@ -39,8 +39,11 @@ async def okws_connect(config):
             await open_ws(client, config)
             # await subscribe(client, config)
 
-    listen = okws.Redis(okws.settings.OKWS_INFO, app)
-    await listen.run()
+    try:
+        listen = okws.Redis(okws.settings.OKWS_INFO, app)
+        await listen.run()
+    finally:
+        pass
 
 
 def ws_status(client, config):
@@ -60,11 +63,8 @@ def ws_status(client, config):
     return _connect
 
 
-async def ws_status_listener(config):
+async def ws_status_listener(client, config):
     # 订阅 ws 服务器 connect 事件，以便 ws 服务器断线时重联
-    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
-    client = await okws.client(redis_url)
-
     servers = map(lambda x: x['name'], config['servers'])
     channels = list(map(lambda x: f"okex/{x}/event", servers))
     # logger.info(f"listen: {channels}")
@@ -73,4 +73,5 @@ async def ws_status_listener(config):
         channels,
         ws_status(client, config)
     )
+
     await listen.run()

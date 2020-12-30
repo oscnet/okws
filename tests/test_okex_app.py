@@ -6,7 +6,7 @@ import logging
 import os
 import aioredis
 import ccxt.async_support as ccxt
-
+import okws.aioclient as aclient
 
 pytestmark = pytest.mark.asyncio
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ async def public_test(client):
     await client.send(json.dumps(
         {"op": "subscribe", "args": ["swap/candle300s:BTC-USD-SWAP"]}))
     await asyncio.sleep(3)
-    proxy = await okws.client()
+    proxy = await aclient.client()
 
     # test candle
     k = await proxy.get('pub', 'swap/candle300s', {'instrument_id': 'BTC-USD-SWAP'})
@@ -72,7 +72,7 @@ async def account(okex, ws_client, proxy):
 
 async def private_test(cl):
     okex = ccxt.okex(get_okex_params())
-    proxy = await okws.client()
+    proxy = await aclient.client()
 
     await asyncio.sleep(5)
 

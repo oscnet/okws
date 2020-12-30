@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import okws
 from .status import ws_status_listener, okws_exist, open_ws, okws_connect, subscribe
 
@@ -45,32 +44,29 @@ def parse_argv(argv):
 async def execute_config_task(config):
     redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
     await asyncio.sleep(1)
-    okex = await okws.client(redis_url)
-    if not await okws_exist(okex):
+    client = okws.client(redis_url)
+    if not await okws_exist(client):
         logger.warning(f"未检测到 okws 运行，程序退出。")
         return
 
-    asyncio.create_task(okws_connect(config))
-    asyncio.create_task(ws_status_listener(config))
+    asyncio.create_task(okws_connect(client, config))
+    asyncio.create_task(ws_status_listener(client, config))
 
-    await open_ws(okex, config)
-    await asyncio.sleep(1)
+    await open_ws(client, config)
+    # await asyncio.sleep(1)
     # 如果相应的 ws 已经连接的话，需要重新订阅一下
-    await subscribe(okex, config)
+    # await subscribe(client, config)
 
 
 async def execute(config):
-    try:
-        logger.info(config)
-        redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
-        listen_channel = config['settings'].get('LISTEN_CHANNEL', 'trade-ws')
-        redis = okws.Redis(listen_channel, okws.RedisCommand(redis_url))
-        await asyncio.gather(
-            redis.run(),
-            execute_config_task(config)
-        )
-    except KeyboardInterrupt:
-        logging.info('Ctrl+C 完成退出')
+    logger.debug(config)
+    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
+    listen_channel = config['settings'].get('LISTEN_CHANNEL', 'trade-ws')
+    redis = okws.Redis(listen_channel, okws.RedisCommand(redis_url))
+    await asyncio.gather(
+        redis.run(),
+        execute_config_task(config)
+    )
 
 
 def main():
@@ -79,4 +75,7 @@ def main():
 
     config = parse_argv(sys.argv)
     # logger.info(config)
-    asyncio.run(execute(config))
+    try:
+        asyncio.run(execute(config))
+    except KeyboardInterrupt:
+        logging.info('Ctrl+C 完成退出')
