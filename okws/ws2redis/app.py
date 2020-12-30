@@ -28,24 +28,31 @@ class Ws2redis(Interceptor):
         self.name = name
         self.redis_url = redis_url
         self.redis = None
+        # 用于指示当前 ws 状态，分别有 READY，CONNECTED，DISCONNECTED，EXIT，ON_DATA
+        self.status_path = f"okex/{self.name}/status"
+        self.event_path = f"okex/{self.name}/event"
 
     async def enter(self, request):
         # logger.debug(f"request={request}")
         if request['_signal_'] == 'READY' and self.redis is None:
             self.redis = await aioredis.create_redis_pool(self.redis_url)
         elif request['_signal_'] == 'CONNECTED':
-            await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'CONNECTED'}))
+            await self.redis.publish(self.event_path, json.dumps({'op': 'CONNECTED'}))
+            await self.redis.setex(self.status_path, 1,'CONNECTED')
             logger.info(f"{self.name} 已连接")
         elif request['_signal_'] == 'DISCONNECTED':
-            await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'DISCONNECTED'}))
+            await self.redis.publish(self.event_path, json.dumps({'op': 'DISCONNECTED'}))
+            await self.redis.set(self.status_path, 'DISCONNECTED')
             logger.info(f"{self.name} DISCONNECTED")
         elif request['_signal_'] == 'EXIT':
-            await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'EXIT'}))
+            await self.redis.publish(self.event_path, json.dumps({'op': 'EXIT'}))
+            await self.redis.set(self.status_path, 'EXIT')
             logger.info(f"{self.name} 退出")
             await self.close()
         elif request['_signal_'] == 'ON_DATA':
             # 用于指示收到数据
-            await self.redis.publish(f"okex/{self.name}/event", json.dumps({'op': 'ON_DATA'}))
+            await self.redis.publish(self.event_path, json.dumps({'op': 'ON_DATA'}))
+            await self.redis.setex(self.status_path, 1, 'ON_DATA')
             logger.debug(request['DATA'])
             if "table" in request['DATA']:
                 await self.redis.publish(f"okex/{self.name}/{request['DATA']['table']}", json.dumps(request['DATA']))
@@ -54,7 +61,7 @@ class Ws2redis(Interceptor):
                               [normal['write'], candle['write']])
 
             elif "event" in request['DATA']:
-                await self.redis.publish(f"okex/{self.name}/event", json.dumps(request['DATA']))
+                await self.redis.publish(self.event_path, json.dumps(request['DATA']))
                 if request['DATA']['event'] == 'error':
                     logger.warning(f"{self.name} 收到错误信息：{request['DATA']}")
                 else:
