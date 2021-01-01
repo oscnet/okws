@@ -88,6 +88,11 @@ class Client:
         self.send({
             'op': 'servers'
         })
+    def server_status(self,server):
+        # 返回对应服务器状态
+        path = f"okex/{server}/status"
+        return self.redis.get(path)
+
 
     def redis_clear(self, path="okex/*"):
         # 清除 redis 服务器中的相关数据
