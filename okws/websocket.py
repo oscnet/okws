@@ -62,8 +62,8 @@ class Websockets:
         await asyncio.wait_for(self.send("ping"), timeout=10)
         return await asyncio.wait_for(self.ws.recv(), timeout=10)
 
-    # 重试 最短时间停10s,最大停15分钟后重试
-    @retry(wait=wait_exponential(multiplier=1, min=10, max=900))
+    # 重试 最短时间停1s,最大停5分钟后重试
+    @retry(wait=wait_exponential(multiplier=1, min=1, max=300))
     async def serve(self):
         try:
             logger.info("READY")
