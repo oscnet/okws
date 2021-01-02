@@ -10,31 +10,42 @@
 
 配置文件示例如下：
 
-```ini
-[test]
-apiKey=
-secret=
-password=
-commands =
-    {"op": "subscribe", "args": ["spot/ticker:ETH-USDT"]}
-    {"op": "subscribe", "args": ["spot/candle60s:ETH-USDT"]}
+```yaml
+# 配置文件示例
+settings:
+  REDIS_URL: "redis://localhost"
+  # 最多保存记录数
+  MAX_ROW: 1000
+  # 侦听用户指令
+  LISTEN_CHANNEL: 'trade-ws'
+  # 服务返回信息频道
+  REDIS_INFO_KEY: 'trade-ws/info'
+  # 广播 okws 信息
+  OKWS_INFO: 'okws/info'
 
-[ok2]
-apiKey=
-secret=8C52F
-password=
+servers:
+  - name: test
+    apiKey: ""
+    secret: ""
+    password: ""
+
+subscribes:
+  - server: test
+    channels:
+      - "spot/ticker:ETH-USDT"
 ```   
-以上的配置，会让 okws 启动后，自动连接两个 websocket ， 分别命名为 test, ok2, 连接上 test 后，还会执行 commands 中的命令，即订阅 ETH-USDT 的 ticker 数据和一分钟的 K 线数据。
+以上的配置，会让 okws 启动后，自动连 websocket ， 命名为 test, 连接上 test 后，还会执行 subscribes 中的命令，即订阅 ETH-USDT 的 ticker 数据。
 
 
 2. 内嵌到自己的程序中：
 
 ```python
 import okws
+import okws.aioclient as aclient
 import asyncio
 
 async def client():
-    okex = await okws.client()
+    okex = await aclient.client()
     
     # 连接到 websocket 服务器
     await okex.open_ws('tests', {'apiKey':'','secret':'','password':''})
@@ -113,11 +124,11 @@ logfile:/usr/local/var/log/okws.log
 ```python
 import asyncio
 import logging
-import okws
+import okws.aioclient as aclient
 
 logger = logging.getLogger(__name__)
 
-okex = await okws.client()
+okex = await aclient.client()
 ret = await okex.open_ws('tests',{'apiKey':'','secret':'','password':''})  # 连接到 okex websockets
 logger.info(ret)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 
-install_requires = ["asyncio", "aioredis", "websockets", "tenacity"]
+install_requires = ["asyncio", "aioredis", "redis", "websockets", "tenacity","pyyaml"]
 
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -29,6 +29,6 @@ setup(
     # include_package_data=True,
     entry_points={
         "console_scripts": [
-            "okws=okws.server:cli"]
+            "okws=okws.cli.cli:main"]
     }
 )

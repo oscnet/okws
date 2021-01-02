@@ -36,7 +36,8 @@ class Decode(Interceptor):
     def __init__(self, cfg={}):
         self.cfg = cfg
 
-    async def ping(self, ws):
+    @staticmethod
+    async def ping(ws):
         await asyncio.wait_for(ws.send("ping"), timeout=10)
         # return await asyncio.wait_for(self.ws.recv(), timeout=10)
 

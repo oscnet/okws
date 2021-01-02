@@ -1,24 +1,33 @@
 # 给最终用户的接口， 从 redis 取 okex websockets 的数据
-import asyncio
 import json
 import logging
 from typing import Union
-
-import aioredis
+import asyncio
+import redis
 from okws.interceptor import execute
-
+import time
 from okws.ws2redis.candle import config as candle
 from okws.ws2redis.normal import config as normal
 
-from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
+from okws.settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 
 logger = logging.getLogger(__name__)
 
 
 class Client:
-    async def get(self, name, path, params={}):
+    def __init__(self, redis_url=REDIS_URL):
+        pool = redis.ConnectionPool.from_url(redis_url, encoding='utf8', decode_responses=True)
+        self.redis = redis.Redis(connection_pool=pool)
+        self.interceptors = [normal['read'], candle['read']]
+        self.id = id(self)
+        self.redis_path = f"{REDIS_INFO_KEY}/{self.id}"
+
+    def get(self, name, path, params=None):
         # if self.redis is None:
         #     self.redis = await aioredis.create_redis(self.redis_url)
+        if params is None:
+            params = {}
+
         ctx = {
             'id': self.id,
             'name': name,
@@ -26,93 +35,73 @@ class Client:
             'redis': self.redis
         }
         ctx.update(params)
-        await execute(ctx, self.interceptors)
+        asyncio.run(execute(ctx, self.interceptors))
         return ctx.get('response')
 
-    async def close(self):
-        if self.redis is not None:
-            self.redis.close()
-            await self.redis.wait_closed()
-            self.redis = None
-
-    def __init__(self, redis_url=REDIS_URL):
-        # 注意初始化要执行 init()
-        self.redis_url = redis_url
-        self.redis = None
-        self.interceptors = [normal['read'], candle['read']]
-        self.id = id(self)
-        self.redis_path = f"{REDIS_INFO_KEY}/{self.id}"
-
-    async def init(self):
-        self.redis = await aioredis.create_redis(self.redis_url)
-
-    async def send(self, cmd: dict):
+    def send(self, cmd: dict):
         # send cmd to websocket
         # if 'name' not in cmd:
         #     logger.warning(f"未指定 websocket 服务名! {cmd}")
         cmd['id'] = self.id
-        await self.redis.publish_json(LISTEN_CHANNEL, cmd)
+        self.redis.publish(LISTEN_CHANNEL, json.dumps(cmd))
 
-    async def open_ws(self, name, auth_params={}):
-        await self.send({
+    def open_ws(self, name, auth_params=None):
+        if auth_params is None:
+            auth_params = {}
+
+        self.send({
             'op': 'open',
             'name': name,
             'args': auth_params
         })
-        # await self.redis.publish_json(LISTEN_CHANNEL)
-        await asyncio.sleep(1)
-        ret = await self.redis.get(self.redis_path, encoding='utf-8')
-        return json.loads(ret)
 
-    async def subscribe(self, name, channels: Union[list, str]):
-        await self.send({
+    def get_return_info(self):
+        # 取得服务器返回信息
+        ret = self.redis.get(self.redis_path)
+        logger.info(f"{self.redis_path}:{ret}")
+        if ret is not None:
+            return json.loads(ret)
+        else:
+            return ret
+
+    def subscribe(self, name, channels: Union[list, str]):
+        self.send({
             'op': 'subscribe',
             'name': name,
             'args': channels if type(channels) == list else [channels]
         })
-        await asyncio.sleep(0)
-        ret = await self.redis.get(self.redis_path, encoding='utf-8')
-        return json.loads(ret)
 
     async def close_ws(self, name):
-        await self.send({
+        self.send({
             'op': 'close',
             'name': name
         })
-        await asyncio.sleep(1)
-        ret = await self.redis.get(self.redis_path, encoding='utf-8')
-        return json.loads(ret)
 
-    async def server_quit(self):
-        await self.send({
+    def server_quit(self):
+        # 关闭 ws
+        self.send({
             'op': 'quit_server'
         })
-        await asyncio.sleep(1)
-        ret = await self.redis.get(self.redis_path, encoding='utf-8')
-        return json.loads(ret)
 
-    async def servers(self):
-        await self.send({
+    def servers(self):
+        # 返回当前运行的 ws
+        self.send({
             'op': 'servers'
         })
-        await asyncio.sleep(1)
-        ret = await self.redis.get(self.redis_path, encoding='utf-8')
-        return json.loads(ret)
+    def server_status(self,server):
+        # 返回对应服务器状态
+        path = f"okex/{server}/status"
+        return self.redis.get(path)
 
-    async def redis_clear(self, path="okex/*"):
+
+    def redis_clear(self, path="okex/*"):
         # 清除 redis 服务器中的相关数据
-        keys = await self.redis.keys(path)
+        keys = self.redis.keys(path)
         for key in keys:
-            await self.redis.delete(key)
-
-    def __del__(self):
-        logger.debug('退出')
-        if self.redis is not None:
-            self.redis.close()
+            self.redis.delete(key)
 
 
-async def client(redis_url=REDIS_URL) -> Client:
+def client(redis_url=REDIS_URL) -> Client:
     # 使用些函数初始化 OKEX 类
     okex = Client(redis_url)
-    await okex.init()
     return okex

@@ -19,10 +19,8 @@ import asyncio
 import json
 import logging
 import aioredis
-import sys
 import okws
-from .config import execute_config_command, parse_argv
-from .settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL, OKWS_INFO
+from okws.settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL, OKWS_INFO
 
 logger = logging.getLogger(__name__)
 
@@ -155,29 +153,3 @@ class RedisCommand:
 async def run(redis_url='redis://localhost'):
     redis = okws.Redis(LISTEN_CHANNEL, RedisCommand(redis_url))
     await redis.run()
-
-
-async def main(conf):
-    if conf is not None:
-        params = dict(conf['config'])
-        redis_url = params.get('redis', REDIS_URL)
-    else:
-        redis_url = REDIS_URL
-    await asyncio.gather(
-        run(redis_url),
-        execute_config_command(conf)
-    )
-
-
-def cli():
-    try:
-        logging.basicConfig(level=logging.INFO,
-                            format='%(asctime)s - %(filename)s[%(lineno)d] - %(levelname)s: %(message)s')
-        config = parse_argv(sys.argv)
-        asyncio.run(main(config))
-    except KeyboardInterrupt:
-        logging.info('Ctrl+C 完成退出')
-
-
-if __name__ == '__main__':
-    cli()
