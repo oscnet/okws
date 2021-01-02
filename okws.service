@@ -4,7 +4,7 @@ After=network.target redis.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/okws  
+ExecStart=/usr/local/bin/okws -c /etc/okws.yaml
 ExecStop=/bin/kill -s TERM $MAINPID
 PIDFile=/var/run/okws/okws.pid
 Restart=on-failure
