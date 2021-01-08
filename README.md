@@ -177,7 +177,6 @@ logger.info(ret)
     * 对于在 okex 接收到的 频道名的数据，会相应转发到 redis 的 key 为 "okex/ws_name/频道名" 上。
     * 如果 websocket 返回的是 event, 会转发到 redis 的 key 为 "okex/ws_name/event" 上。
     * 用于指示当前 ws 状态，分别会将 'READY'，'CONNECTED'，'DISCONNECTED'，'EXIT'，'ON_DATA' 发送到 "okex/ws_name/status" 上。
-    * 一个 ws 连接所订阅的频道，会记录在 okex/ws_name/subscribed 上，用于断线后自动重连并自动重新订阅。
 
 2. K 线数据除了用类似 `await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT",'n':100})` 取得外，也可以订阅 `'okex/name/spot/candle60s:instrument_id'` 频道，可以在有新 K 线时得到通知。通知内容为最新确定的 K 线数据。
 
