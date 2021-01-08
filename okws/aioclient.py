@@ -5,20 +5,19 @@ import logging
 from typing import Union
 
 import aioredis
-from okws.interceptor import execute
 
+from okws.interceptor import execute
 from okws.ws2redis.candle import config as candle
 from okws.ws2redis.normal import config as normal
-
-from okws.settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
+from .settings import default_settings
 
 logger = logging.getLogger(__name__)
 
 
 class Client:
-    async def get(self, name, path, params={}):
-        # if self.redis is None:
-        #     self.redis = await aioredis.create_redis(self.redis_url)
+    async def get(self, name, path, params=None):
+        if params is None:
+            params = {}
         ctx = {
             'id': self.id,
             'name': name,
@@ -35,13 +34,14 @@ class Client:
             await self.redis.wait_closed()
             self.redis = None
 
-    def __init__(self, redis_url=REDIS_URL):
+    def __init__(self, REDIS_URL, REDIS_INFO_KEY, LISTEN_CHANNEL, **argv):
         # 注意初始化要执行 init()
-        self.redis_url = redis_url
+        self.redis_url = REDIS_URL
         self.redis = None
         self.interceptors = [normal['read'], candle['read']]
         self.id = id(self)
         self.redis_path = f"{REDIS_INFO_KEY}/{self.id}"
+        self.listen_channel = LISTEN_CHANNEL
 
     async def init(self):
         self.redis = await aioredis.create_redis(self.redis_url)
@@ -51,9 +51,11 @@ class Client:
         # if 'name' not in cmd:
         #     logger.warning(f"未指定 websocket 服务名! {cmd}")
         cmd['id'] = self.id
-        await self.redis.publish_json(LISTEN_CHANNEL, cmd)
+        await self.redis.publish_json(self.listen_channel, cmd)
 
-    async def open_ws(self, name, auth_params={}):
+    async def open_ws(self, name, auth_params=None):
+        if auth_params is None:
+            auth_params = {}
         await self.send({
             'op': 'open',
             'name': name,
@@ -111,8 +113,11 @@ class Client:
             self.redis.close()
 
 
-async def client(redis_url=REDIS_URL) -> Client:
+async def client(configs=None) -> Client:
     # 使用些函数初始化 OKEX 类
-    okex = Client(redis_url)
+    if configs is None:
+        configs = {}
+    configs.update(default_settings)
+    okex = Client(**configs)
     await okex.init()
     return okex

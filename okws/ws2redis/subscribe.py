@@ -13,6 +13,7 @@ class Subscribe(Interceptor):
     """
 
     def __init__(self):
+        super().__init__('Subscribe')
         self.subscribed = set()
 
     async def enter(self, request):

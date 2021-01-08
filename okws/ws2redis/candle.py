@@ -45,10 +45,11 @@ async def write(ctx):
 async def read(ctx):
     """取 k 线数据
     Args:
-        channel: okex 频道名, 如 'swap/candle60s'
-        {'instrument_id': 'BTC-USD-SWAP','n':100} n 可选参数，取最新的 n 条 k 线数据
+        ctx:
+            channel: okex 频道名, 如 'swap/candle60s'
+            {'instrument_id': 'BTC-USD-SWAP','n':100} n 可选参数，取最新的 n 条 k 线数据
     返回：最新的 n 条 k 线数据列表。
-    subscribe 'okex/name/swap/candle60s' 可以在有新 k 线时得到通知，通知内容为最新 k 线的 timestamp,表示这个 timestamp 之前的 k 线已经确定，可以使用。
+        subscribe 'okex/name/swap/candle60s' 可以在有新 k 线时得到通知，通知内容为最新 k 线的 timestamp,表示这个 timestamp 之前的 k 线已经确定，可以使用。
 
     ```
         [

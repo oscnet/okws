@@ -51,7 +51,7 @@ async def client():
     await okex.open_ws('tests', {'apiKey':'','secret':'','password':''})
     await asyncio.sleep(1)
 
-    ret = await okex.subscribe('tests', "spot/ticker:ETH-USDT")
+    await okex.subscribe('tests', "spot/ticker:ETH-USDT")
     # 等待服务器完成订阅和接收 ticker 数据
     await asyncio.sleep(2)
     ticker = await okex.get('tests', "spot/ticker", {"instrument_id": "ETH-USDT"})
@@ -180,7 +180,7 @@ logger.info(ret)
 
 2. K 线数据除了用类似 `await okex.get('tests', "spot/candle60s", {"instrument_id": "ETH-USDT",'n':100})` 取得外，也可以订阅 `'okex/name/spot/candle60s:instrument_id'` 频道，可以在有新 K 线时得到通知。通知内容为最新确定的 K 线数据。
 
-3. okws 会向 `settings.OKWS_INFO`（缺省为 'okws/info'）频道发送信号，当 `okws` 重启时，客户端就可以在这个频道收到 `CONNECTED` 信号时重新连接 websocket 及订阅。
+3. ~~~okws 会向 `settings.OKWS_INFO`（缺省为 'okws/info'）频道发送信号，当 `okws` 重启时，客户端就可以在这个频道收到 `CONNECTED` 信号时重新连接 websocket 及订阅。~~~
  
 
  

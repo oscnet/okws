@@ -4,8 +4,6 @@ from typing import Union
 
 import aioredis
 
-from .settings import REDIS_URL
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +31,7 @@ class Redis:
 
     """
 
-    def __init__(self, channels: Union[list, str], app, url=REDIS_URL):
+    def __init__(self, channels: Union[list, str], app, url="redis://localhost"):
         """初始化
 
         Args:

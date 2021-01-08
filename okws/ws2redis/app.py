@@ -14,23 +14,24 @@ from .subscribe import Subscribe
 logger = logging.getLogger(__name__)
 
 
-def App(name, api_params=None, redis_url="redis://localhost"):
+def app(name, api_params=None, redis_url="redis://localhost"):
     if api_params is None:
         api_params = {}
     decode = okws.okex.Decode(api_params)
     ws2redis = Ws2redis(name, redis_url)
     subscribe_record = Subscribe()
 
-    async def app(ctx):
+    async def _app(ctx):
         await execute(ctx, [decode, subscribe_record, ws2redis])
 
-    return app
+    return _app
 
 
 class Ws2redis(Interceptor):
     MAX_ARRAY_LENGTH = 100,
 
     def __init__(self, name, redis_url="redis://localhost"):
+        super().__init__(name)
         self.name = name
         self.redis_url = redis_url
         self.redis = None

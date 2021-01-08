@@ -8,6 +8,7 @@ import sys
 from yaml import Loader, load
 
 import okws
+from .settings import default_settings
 
 logger = logging.getLogger(__name__)
 
@@ -52,21 +53,20 @@ def read_config(config_file):
 def parse_argv(argv):
     try:
         opts, _args = getopt.getopt(argv[1:], "-h-c:", ['help'])
+        for opt, arg in opts:
+            if opt == "-c":
+                return read_config(arg)
+            else:
+                usage()
+        usage()
     except getopt.GetoptError:
         usage()
 
-    for opt, arg in opts:
-        if opt in ("-c"):
-            return read_config(arg)
-        else:
-            usage()
-    usage()
-
 
 async def execute_config_task(config):
-    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
+    # redis_url = config['settings']['REDIS_URL']
     await asyncio.sleep(1)
-    client = okws.client(redis_url)
+    client = okws.client(config['settings'])
     if not await okws_exist(client):
         logger.warning(f"未检测到 okws 运行，程序退出。")
         return
@@ -79,9 +79,11 @@ async def execute_config_task(config):
 
 async def execute(config):
     logger.debug(config)
-    redis_url = config['settings'].get('REDIS_URL', 'redis://localhost')
-    listen_channel = config['settings'].get('LISTEN_CHANNEL', 'trade-ws')
-    redis = okws.Redis(listen_channel, okws.RedisCommand(redis_url))
+    config['settings'].update(default_settings)
+    redis_cmd = okws.RedisCommand(config['settings']['REDIS_URL'],
+                                  config['settings']['REDIS_INFO_KEY'])
+    redis = okws.Redis(config['settings']['LISTEN_CHANNEL'], redis_cmd)
+
     await asyncio.gather(
         redis.run(),
         execute_config_task(config)

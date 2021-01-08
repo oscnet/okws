@@ -10,7 +10,7 @@ CHANNELS = ['TRADECHANNEL', 'aaaa']
 logger = logging.getLogger(__name__)
 
 
-async def send_exit_cmd(client):
+async def send_exit_cmd():
     # 测试当 redis 收到 'exit' 时退出
     await asyncio.sleep(0.5)
     redis = await aioredis.create_redis(redis_url)
@@ -43,6 +43,6 @@ async def test_cmd():
         client = okws.Redis(CHANNELS, on_cmd)
         await asyncio.gather(
             client.run(),
-            send_exit_cmd(client))
+            send_exit_cmd())
     except asyncio.CancelledError:
         logger.info("catch CancelledError!!")

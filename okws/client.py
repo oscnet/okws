@@ -7,7 +7,7 @@ from typing import Union
 import redis
 
 from okws.interceptor import execute
-from okws.settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
+from okws.settings import default_settings
 from okws.ws2redis.candle import config as candle
 from okws.ws2redis.normal import config as normal
 
@@ -15,12 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class Client:
-    def __init__(self, redis_url=REDIS_URL):
-        pool = redis.ConnectionPool.from_url(redis_url, encoding='utf8', decode_responses=True)
+    def __init__(self, REDIS_URL, REDIS_INFO_KEY, LISTEN_CHANNEL, **argv):
+        pool = redis.ConnectionPool.from_url(REDIS_URL, encoding='utf8', decode_responses=True)
         self.redis = redis.Redis(connection_pool=pool)
         self.interceptors = [normal['read'], candle['read']]
         self.id = id(self)
         self.redis_path = f"{REDIS_INFO_KEY}/{self.id}"
+        self.listen_channel = LISTEN_CHANNEL
 
     def get(self, name, path, params=None):
         # if self.redis is None:
@@ -43,7 +44,7 @@ class Client:
         # if 'name' not in cmd:
         #     logger.warning(f"未指定 websocket 服务名! {cmd}")
         cmd['id'] = self.id
-        self.redis.publish(LISTEN_CHANNEL, json.dumps(cmd))
+        self.redis.publish(self.listen_channel, json.dumps(cmd))
 
     def open_ws(self, name, auth_params=None):
         if auth_params is None:
@@ -101,7 +102,8 @@ class Client:
             self.redis.delete(key)
 
 
-def client(redis_url=REDIS_URL) -> Client:
+def client(configs) -> Client:
     # 使用些函数初始化 OKEX 类
-    okex = Client(redis_url)
+    configs.update(default_settings)
+    okex = Client(**configs)
     return okex

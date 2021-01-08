@@ -2,7 +2,8 @@
 
 每个 Interceptor 包含 enter，leave 两个函数
 
-例: execute(ctx, [interceptor1,interceptor2]) 将顺序执行： interceptor1.enter(ctx),interceptor2.enter(ctx),interceptor2.leave(ctx),interceptor1.leave(ctx), ctx['response'] 将成为 execute 的返回值
+例: execute(ctx, [interceptor1,interceptor2]) 将顺序执行： interceptor1.enter(ctx),interceptor2.enter(ctx),interceptor2.leave(ctx),interceptor1.leave(ctx),
+ctx['response'] 将成为 execute 的返回值
 
 """
 

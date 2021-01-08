@@ -2,7 +2,7 @@ import asyncio
 import pytest
 import okws
 import logging
-
+from okws.interceptor import execute
 # pytest -o log_cli=true --log-cli-level=info  -s
 
 logging.basicConfig(level=logging.DEBUG)
@@ -13,7 +13,7 @@ ws_url = "wss://real.okex.com:8443/ws/v3"
 
 
 async def app(request):
-    await okws.interceptor.execute(request, [okws.okex.Decode()])
+    await execute(request, [okws.okex.Decode()])
     logging.info(request)
 
 

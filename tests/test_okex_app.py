@@ -7,7 +7,7 @@ import os
 import aioredis
 import ccxt.async_support as ccxt
 import okws.aioclient as aclient
-
+from okws.ws2redis.app import app
 pytestmark = pytest.mark.asyncio
 logger = logging.getLogger(__name__)
 
@@ -100,8 +100,8 @@ async def redis_delete_all():
 async def test_app():
     # await redis_delete_all()
 
-    client1 = okws.Websockets(okws.ws2redis.app.App('pub'))
-    client2 = okws.Websockets(okws.ws2redis.app.App('test', get_okex_params()))
+    client1 = okws.Websockets(app('pub'))
+    client2 = okws.Websockets(app('test', get_okex_params()))
 
     # with pytest.raises(CancelledError):
     await asyncio.gather(

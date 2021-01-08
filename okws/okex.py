@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import datetime
 import hmac
@@ -5,7 +6,7 @@ import json
 import logging
 import zlib
 from collections.abc import Mapping
-import asyncio
+
 from .interceptor import add_response, Interceptor
 
 """用法:
@@ -33,7 +34,10 @@ def _inflate(data):
 
 
 class Decode(Interceptor):
-    def __init__(self, cfg={}):
+    def __init__(self, cfg=None):
+        super().__init__('Decode')
+        if cfg is None:
+            cfg = {}
         self.cfg = cfg
 
     @staticmethod
