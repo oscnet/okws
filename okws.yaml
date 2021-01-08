@@ -19,4 +19,4 @@ servers:
 subscribes:
   - server: test
     channels:
-      - "spot/ticker:ETH-USDT"
+      - "spot/candle60s:ETH-USDT"

@@ -2,9 +2,10 @@ import asyncio
 import logging
 import socket
 from asyncio.exceptions import CancelledError, TimeoutError
+
 import websockets
-from websockets.exceptions import ConnectionClosed
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, wait_exponential
+from websockets.exceptions import ConnectionClosed, ConnectionClosedError
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +52,11 @@ class Websockets:
     async def run_app(self, signal, **request):
         request["_signal_"] = signal
         request["_server_"] = self
-        responses = await self.app(request)
+        await self.app(request)
+        responses = request.get('response')
         if responses and isinstance(responses, list):
             for res in responses:
-                logger.info(f"send cmd:{res}")
+                logger.debug(f"send cmd:{res}")
                 await self.send(res)
                 # await asyncio.sleep(1)
 
@@ -81,7 +83,7 @@ class Websockets:
                     except TimeoutError:
                         await self.run_app('TIMEOUT')
 
-        except (ConnectionClosed, socket.error):
+        except (ConnectionClosed, ConnectionClosedError, ConnectionResetError, socket.error):
             logger.exception("连接断开")
             raise
         except CancelledError:

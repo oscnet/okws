@@ -2,11 +2,14 @@
 """
 import json
 import logging
+
 import aioredis
-from okws.interceptor import Interceptor, execute
+
 import okws
+from okws.interceptor import Interceptor, execute
 from okws.ws2redis.candle import config as candle
 from okws.ws2redis.normal import config as normal
+from .subscribe import Subscribe
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +19,10 @@ def App(name, api_params=None, redis_url="redis://localhost"):
         api_params = {}
     decode = okws.okex.Decode(api_params)
     ws2redis = Ws2redis(name, redis_url)
+    subscribe_record = Subscribe()
 
     async def app(ctx):
-        await execute(ctx, [decode, ws2redis])
+        await execute(ctx, [decode, subscribe_record, ws2redis])
 
     return app
 
@@ -40,7 +44,7 @@ class Ws2redis(Interceptor):
             self.redis = await aioredis.create_redis_pool(self.redis_url)
         elif request['_signal_'] == 'CONNECTED':
             await self.redis.publish(self.event_path, json.dumps({'op': 'CONNECTED'}))
-            await self.redis.setex(self.status_path, 1,'CONNECTED')
+            await self.redis.setex(self.status_path, 1, 'CONNECTED')
             logger.info(f"{self.name} 已连接")
         elif request['_signal_'] == 'DISCONNECTED':
             await self.redis.publish(self.event_path, json.dumps({'op': 'DISCONNECTED'}))

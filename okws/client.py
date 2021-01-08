@@ -1,15 +1,15 @@
 # 给最终用户的接口， 从 redis 取 okex websockets 的数据
+import asyncio
 import json
 import logging
 from typing import Union
-import asyncio
+
 import redis
+
 from okws.interceptor import execute
-import time
+from okws.settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 from okws.ws2redis.candle import config as candle
 from okws.ws2redis.normal import config as normal
-
-from okws.settings import LISTEN_CHANNEL, REDIS_INFO_KEY, REDIS_URL
 
 logger = logging.getLogger(__name__)
 
@@ -88,11 +88,11 @@ class Client:
         self.send({
             'op': 'servers'
         })
-    def server_status(self,server):
+
+    def server_status(self, server):
         # 返回对应服务器状态
         path = f"okex/{server}/status"
         return self.redis.get(path)
-
 
     def redis_clear(self, path="okex/*"):
         # 清除 redis 服务器中的相关数据

@@ -1,15 +1,37 @@
 import asyncio
-import okws
-from .status import ws_status_listener, okws_exist, open_ws, okws_connect, subscribe
-
 import getopt
 import logging
 import os
 import os.path
 import sys
+
 from yaml import Loader, load
 
+import okws
+
 logger = logging.getLogger(__name__)
+
+
+async def okws_exist(client):
+    client.servers()
+    await asyncio.sleep(1)
+    info = client.get_return_info()
+    return type(info['message']) == list
+
+
+async def open_ws(client, config):
+    # 连接到 ws 服务器
+    for server in config['servers']:
+        client.open_ws(server['name'], server)
+    await asyncio.sleep(2)
+
+
+async def subscribe(client, config, name=None):
+    # 发送订阅命令
+    for sub in config.get('subscribes', []):
+        if name is None or sub['server'] == name:
+            client.subscribe(sub['server'], sub['channels'])
+            await asyncio.sleep(1)
 
 
 def usage():
@@ -49,13 +71,10 @@ async def execute_config_task(config):
         logger.warning(f"未检测到 okws 运行，程序退出。")
         return
 
-    asyncio.create_task(okws_connect(client, config))
-    asyncio.create_task(ws_status_listener(client, config))
-
     await open_ws(client, config)
-    # await asyncio.sleep(1)
+    await asyncio.sleep(1)
     # 如果相应的 ws 已经连接的话，需要重新订阅一下
-    # await subscribe(client, config)
+    await subscribe(client, config)
 
 
 async def execute(config):
