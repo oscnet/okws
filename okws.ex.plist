@@ -11,7 +11,7 @@
     <string>xyz.oscnet.okws</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/Users/oscar/miniconda3/envs/trade/bin/okws</string>
+      <string>/usr/local/Caskroom/miniconda/base/envs/trade/bin/okws</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
